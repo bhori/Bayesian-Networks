@@ -57,4 +57,19 @@ public class Variable {
 //        System.out.println(cpt);
     }
 
+    public ArrayList<String> getValues() {
+        return values;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public String toString(){
+        return name+"\n"+values+"\n"+parents+"\n";
+    }
+
+    public boolean equals(Variable var){
+        return name.equals(var.getName());
+    }
 }

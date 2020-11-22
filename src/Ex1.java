@@ -12,17 +12,14 @@ public class Ex1 {
 
     }
 
-    private static void readInput() throws FileNotFoundException {
-        Scanner in = new Scanner(new FileReader("input.txt"));
-//        in.skip("Network");
+    private static BayesianNetwork createNetwork(Scanner in) throws FileNotFoundException {
+//        Scanner in = new Scanner(new FileReader("input.txt"));
         in.nextLine(); // "Network"
         in.skip("Variables: ");
-//        in.next(); // "Variables:"
-//        in.next();
-//        in.useDelimiter(",");
         ArrayList<String> variables = new ArrayList<String>(Arrays.asList(in.nextLine().split(",")));
         System.out.println(variables);
         in.nextLine(); // Skip the empty line
+        BayesianNetwork network = new BayesianNetwork();
         // Read each variable
         for (int i = 0; i<variables.size(); i++){
             in.skip("Var ");
@@ -31,14 +28,11 @@ public class Ex1 {
             ArrayList<String> values = new ArrayList<String>(Arrays.asList(in.nextLine().split(",")));
             System.out.println(values);
             in.skip("Parents: ");
-//            boolean hasParents;
             ArrayList<String> parents;
             String parent = in.nextLine();
             if(parent.equals("none")){
-//                hasParents = false;
                 parents = new ArrayList<String>();
             }else{
-//                hasParents = true;
                 parents = new ArrayList<String>(Arrays.asList(parent.split(",")));
                 System.out.println(parents);
             }
@@ -52,9 +46,8 @@ public class Ex1 {
                 double complementary = 1;
                 String parent_key = "";
                 String self_key = "";
-                if(parents.size()!=0){
+                if(parents.size()!=0)
                     parent_key = entries.substring(0, entries.indexOf('=') - 1);
-                }
                 while(entries.contains("=")){
                     entries = entries.substring(entries.indexOf('=')+1);
                     if(entries.contains("=")) {
@@ -64,7 +57,6 @@ public class Ex1 {
                     }
                     self_key = entry.substring(0, entry.indexOf(','));
                     probability = Double.parseDouble(entry.substring(entry.indexOf(',')+1));
-                    System.out.println(self_key+","+probability);
                     variable.addEntry(parent_key,self_key,probability);
                     complementary-=probability;
                 }
@@ -73,12 +65,12 @@ public class Ex1 {
                     if(!cpt.get(parent_key).containsKey(value))
                         variable.addEntry(parent_key,value,complementary);
                 }
-//                variable.addEntry(parent_key,"false",complementary);
-//                variable.addEntry(parent_key,self_key,complementary);
             }
             variable.printCPT();
-//            break;
+            network.addVariable(variable);
         }
+//        System.out.println(network);
+        return network;
     }
 
     private static void saveToFile(String summary) throws IOException {
@@ -87,6 +79,20 @@ public class Ex1 {
 
 
     public static void main(String[] args) throws IOException {
-        readInput();
+        Scanner in = new Scanner(new FileReader("input.txt"));
+        BayesianNetwork network = createNetwork(in);
+//        System.out.println("\n\n\n"+network);
+        in.nextLine(); // "Queries"
+        String query = "";
+        int algo;
+        while(in.hasNextLine()){
+            query = in.nextLine();
+            algo = query.charAt(query.length()-1)-'0';
+            System.out.println(query+"\n"+algo);
+            query = query.substring(query.indexOf('(')+1,query.indexOf(')'));
+            System.out.println(query);
+            String query_var = query.substring(0, query.indexOf('|'));
+            String evidence = query.substring(query.indexOf('|')+1);
+        }
     }
 }
