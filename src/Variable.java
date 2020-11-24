@@ -69,6 +69,10 @@ public class Variable {
         return name+"\n"+values+"\n"+parents+"\n";
     }
 
+    public ArrayList<String> getParents() {
+        return parents;
+    }
+
     public boolean equals(Variable var){
         return name.equals(var.getName());
     }
