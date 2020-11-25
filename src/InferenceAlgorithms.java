@@ -2,6 +2,8 @@ import java.text.DecimalFormat;
 import java.util.*;
 
 public class InferenceAlgorithms {
+    private static int multi_count;
+//    private int multi_count = 0;
 
     private static boolean chekIfCPT(BayesianNetwork network, String query_var_name, Set<String> evidence_var_names){
         Variable query_var = network.getVariable(query_var_name);
@@ -11,6 +13,16 @@ public class InferenceAlgorithms {
         }
         return !query_var.getParents().isEmpty();
 //        return evidence_var_names.containsAll(query_var.getParents());
+    }
+
+    private static double getResultFromCPT(Variable var, HashMap<String, String> query_var, HashMap<String, String> evidence){
+        StringBuilder parents_key = new StringBuilder();
+        for (String parent : var.getParents()) {
+            parents_key.append(evidence.get(parent)).append(",");
+        }
+        parents_key = new StringBuilder(parents_key.substring(0, parents_key.length() - 1));
+        String self_key = query_var.get(var.getName());
+        return var.getCpt().get(parents_key.toString()).get(self_key);
     }
 
     private static <T> List<List<T>> cartesianProduct(List<T>... lists) {
@@ -45,27 +57,68 @@ public class InferenceAlgorithms {
         return product;
     }
 
+    private static String getQueryVarName(HashMap<String, String> query_var){
+        Set<String> s = query_var.keySet();
+        Iterator<String> it = s.iterator();
+        return it.next();
+    }
+
+    private static double getVarProb(Variable var, HashMap<String, String> combination){
+        StringBuilder parents_key = new StringBuilder();
+        for (String parent : var.getParents()) {
+            parents_key.append(combination.get(parent)).append(",");
+        }
+        if ((parents_key.length() > 0) && (parents_key.charAt(parents_key.length() - 1) == ','))
+            parents_key = new StringBuilder(parents_key.substring(0, parents_key.length() - 1));
+        String self_key = "";
+        self_key = combination.get(var.getName());
+        return var.getCpt().get(parents_key.toString()).get(self_key);
+    }
+
+    private static double getLocalProb(String query_var_name, String query_var_value, BayesianNetwork network, List<String> combination, HashMap<String, String> evidence, ArrayList<Variable> free){
+        double local_prob = 1;
+        HashMap<String, String> current_values;
+        current_values = (HashMap<String, String>) evidence.clone();
+        current_values.put(query_var_name, query_var_value);
+        for (int i = 0; i < combination.size(); i++) {
+//                        free_comb.put(free.get(i).getName(), combination.get(i));
+            current_values.put(free.get(i).getName(), combination.get(i));
+        }
+        for (Variable v : network.getVariables()) {
+            local_prob *= getVarProb(v, current_values);
+            multi_count++;
+        }
+        if (multi_count > 0)
+            multi_count--;
+        return local_prob;
+    }
+
+    private static double getLocalProb(String query_var_name, String query_var_value, BayesianNetwork network, HashMap<String, String> evidence){
+        double local_prob = 1;
+        HashMap<String, String> current_values;
+        current_values = (HashMap<String, String>) evidence.clone();
+        current_values.put(query_var_name, query_var_value);
+        for (Variable v : network.getVariables()) {
+            local_prob *= getVarProb(v, current_values);
+            multi_count++;
+        }
+        if (multi_count > 0)
+            multi_count--;
+        return local_prob;
+    }
+
+
     public static String simpleInference(BayesianNetwork network, HashMap<String, String> query_var, HashMap<String, String> evidence){
         double sum_of_prob = 0;
         double required_value_prob = 0;
-        int multi_count = 0;
+//        int multi_count = 0;
+        multi_count=0;
         int add_count = 0;
         String result = "";
-        String query_var_name = "";
+        String query_var_name = getQueryVarName(query_var);
         DecimalFormat df = new DecimalFormat("#.#####");
-        Set<String> s = query_var.keySet();
-        Iterator<String> it = s.iterator();
-        query_var_name = it.next();
         if(chekIfCPT(network, query_var_name, evidence.keySet())){
-            StringBuilder parents_key = new StringBuilder();
-            Variable var = network.getVariable(query_var_name);
-            for (String parent : var.getParents()) {
-                parents_key.append(evidence.get(parent)).append(",");
-            }
-            parents_key = new StringBuilder(parents_key.substring(0, parents_key.length() - 1));
-            String self_key = query_var.get(query_var_name);
-            required_value_prob = var.getCpt().get(parents_key.toString()).get(self_key);
-            result = df.format(required_value_prob);
+            result = df.format(getResultFromCPT(network.getVariable(query_var_name), query_var, evidence));
         }else {
             ArrayList<Variable> free = new ArrayList<>();
             ArrayList<ArrayList<String>> free_values = new ArrayList<>();
@@ -80,52 +133,11 @@ public class InferenceAlgorithms {
                 if (free.size() > 0) {
                     List<List<String>> comb = cartesianProduct(free_values.toArray(new ArrayList[]{new ArrayList<ArrayList<String>>()}));
                     for (List<String> combination : comb) {
-                        double local_prob = 1;
-//                        HashMap<String, String> free_comb = new HashMap<>();
-                        HashMap<String, String> current_values;
-                        current_values = (HashMap<String, String>) evidence.clone();
-                        current_values.put(query_var_name, value);
-                        for (int i = 0; i < combination.size(); i++) {
-//                        free_comb.put(free.get(i).getName(), combination.get(i));
-                            current_values.put(free.get(i).getName(), combination.get(i));
-                        }
-                        for (Variable v : network.getVariables()) {
-                            StringBuilder parents_key = new StringBuilder();
-                            for (String parent : v.getParents()) {
-                                parents_key.append(current_values.get(parent)).append(",");
-                            }
-                            if ((parents_key.length() > 0) && (parents_key.charAt(parents_key.length() - 1) == ','))
-                                parents_key = new StringBuilder(parents_key.substring(0, parents_key.length() - 1));
-                            String self_key = "";
-                            self_key = current_values.get(v.getName());
-                            local_prob *= v.getCpt().get(parents_key.toString()).get(self_key);
-                            multi_count++;
-                        }
-                        if (multi_count > 0)
-                            multi_count--;
-                        prob += local_prob;
+                        prob+= getLocalProb(query_var_name, value, network, combination, evidence, free);
                         add_count++;
                     }
                 } else {
-                    double local_prob = 1;
-                    HashMap<String, String> current_values;
-                    current_values = (HashMap<String, String>) evidence.clone();
-                    current_values.put(query_var_name, value);
-                    for (Variable v : network.getVariables()) {
-                        StringBuilder parents_key = new StringBuilder();
-                        for (String parent : v.getParents()) {
-                            parents_key.append(current_values.get(parent)).append(",");
-                        }
-                        if ((parents_key.length() > 0) && (parents_key.charAt(parents_key.length() - 1) == ','))
-                            parents_key = new StringBuilder(parents_key.substring(0, parents_key.length() - 1));
-                        String self_key = "";
-                        self_key = current_values.get(v.getName());
-                        local_prob *= v.getCpt().get(parents_key.toString()).get(self_key);
-                        multi_count++;
-                    }
-                    if (multi_count > 0)
-                        multi_count--;
-                    prob += local_prob;
+                    prob+= getLocalProb(query_var_name, value, network, evidence);
                     add_count++;
                 }
                 if (value.equals(query_var.get(query_var_name)))

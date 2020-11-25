@@ -103,7 +103,7 @@ public class Ex1 {
 
 
     public static void main(String[] args) throws IOException {
-        Scanner in = new Scanner(new FileReader("input2.txt"));
+        Scanner in = new Scanner(new FileReader("input.txt"));
         BayesianNetwork network = createNetwork(in);
         in.nextLine(); // "Queries"
         StringBuilder summary = new StringBuilder();
