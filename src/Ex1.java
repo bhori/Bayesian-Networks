@@ -1,6 +1,6 @@
-import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -12,12 +12,12 @@ public class Ex1 {
 
     }
 
-    private static BayesianNetwork createNetwork(Scanner in) throws FileNotFoundException {
+    private static BayesianNetwork createNetwork(Scanner in) {
 //        Scanner in = new Scanner(new FileReader("input.txt"));
         in.nextLine(); // "Network"
         in.skip("Variables: ");
-        ArrayList<String> variables = new ArrayList<String>(Arrays.asList(in.nextLine().split(",")));
-        System.out.println(variables);
+        ArrayList<String> variables = new ArrayList<>(Arrays.asList(in.nextLine().split(",")));
+//        System.out.println(variables);
         in.nextLine(); // Skip the empty line
         BayesianNetwork network = new BayesianNetwork();
         // Read each variable
@@ -25,16 +25,16 @@ public class Ex1 {
             in.skip("Var ");
             String name = in.nextLine();
             in.skip("Values: ");
-            ArrayList<String> values = new ArrayList<String>(Arrays.asList(in.nextLine().split(",")));
-            System.out.println(values);
+            ArrayList<String> values = new ArrayList<>(Arrays.asList(in.nextLine().split(",")));
+//            System.out.println(values);
             in.skip("Parents: ");
             ArrayList<String> parents;
             String parent = in.nextLine();
             if(parent.equals("none")){
-                parents = new ArrayList<String>();
+                parents = new ArrayList<>();
             }else{
-                parents = new ArrayList<String>(Arrays.asList(parent.split(",")));
-                System.out.println(parents);
+                parents = new ArrayList<>(Arrays.asList(parent.split(",")));
+//                System.out.println(parents);
             }
             Variable variable = new Variable(name, values, parents);
             in.nextLine(); // "CPT:"
@@ -66,33 +66,54 @@ public class Ex1 {
                         variable.addEntry(parent_key,value,complementary);
                 }
             }
-            variable.printCPT();
+//            variable.printCPT();
             network.addVariable(variable);
         }
 //        System.out.println(network);
         return network;
     }
 
-    private static void saveToFile(String summary) throws IOException {
+    private static Query readQuery(Scanner in){
+        String str_query;
+        str_query = in.nextLine();
+        int algo = str_query.charAt(str_query.length()-1)-'0';
+        str_query = str_query.substring(str_query.indexOf('(')+1,str_query.indexOf(')'));
+        String query_var = str_query.substring(0, str_query.indexOf('|'));
+        String evidence = str_query.substring(str_query.indexOf('|')+1);
+        String[] q = query_var.split("=");
+        HashMap<String, String> query_variable = new HashMap<>();
+        query_variable.put(q[0], q[1]);
+        String[] e = evidence.split(",");
+        HashMap<String, String> evidence_variables = new HashMap<>();
+        for (String s : e) {
+            evidence_variables.put(s.substring(0, s.indexOf('=')), s.substring(s.indexOf('=')+1));
+        }
+        return new Query(query_variable, evidence_variables, algo);
+    }
 
+    private static void saveToFile(String summary) {
+        try {
+            PrintWriter pw = new PrintWriter("output.txt");
+            pw.write(summary);
+            pw.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
 
     public static void main(String[] args) throws IOException {
-        Scanner in = new Scanner(new FileReader("input.txt"));
+        Scanner in = new Scanner(new FileReader("input2.txt"));
         BayesianNetwork network = createNetwork(in);
-//        System.out.println("\n\n\n"+network);
         in.nextLine(); // "Queries"
-        String query = "";
-        int algo;
+        StringBuilder summary = new StringBuilder();
         while(in.hasNextLine()){
-            query = in.nextLine();
-            algo = query.charAt(query.length()-1)-'0';
-            System.out.println(query+"\n"+algo);
-            query = query.substring(query.indexOf('(')+1,query.indexOf(')'));
-            System.out.println(query);
-            String query_var = query.substring(0, query.indexOf('|'));
-            String evidence = query.substring(query.indexOf('|')+1);
+            if(summary.length()>0)
+                summary.append("\n");
+            Query query = readQuery(in);
+            summary.append(InferenceAlgorithms.simpleInference(network, query.getQuery_variable(), query.getEvidence_variables()));
         }
+        System.out.println(summary);
+        saveToFile(summary.toString());
     }
 }
