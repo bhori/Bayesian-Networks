@@ -6,7 +6,7 @@ public class BayesianNetwork {
     private HashMap<String, Variable> network;
 
     public BayesianNetwork() {
-        network = new HashMap<String, Variable>();
+        network = new HashMap<>();
         variables = new ArrayList<>();
     }
 
