@@ -28,11 +28,11 @@ public class Query {
         this.algo = algo;
     }
 
-    public HashMap<String, String> getQuery_variable() {
+    public HashMap<String, String> getQueryVariable() {
         return query_variable;
     }
 
-    public HashMap<String, String> getEvidence_variables() {
+    public HashMap<String, String> getEvidenceVariables() {
         return evidence_variables;
     }
 

@@ -10,7 +10,9 @@ public class Variable {
     private boolean hasParents;
     private ArrayList<String> parents;
 //    private String cpt_;
-    private HashMap<String, HashMap<String, Double>> cpt;
+//    private HashMap<String, HashMap<String, Double>> cpt;
+    private CPT cpt;
+
 
 //    public Variable(){
 //        name ="";
@@ -24,38 +26,41 @@ public class Variable {
 
     public Variable(String name, ArrayList<String> values, ArrayList<String> parents){
         this.name = name; // Need to change this assignment?
-        this.values = new ArrayList<String>();
-        for (String value : values) {
-            this.values.add(value);
-        }
-        this.parents = new ArrayList<String>();
-        for (String parent : parents) {
-            this.parents.add(parent);
-        }
-        cpt = new HashMap<String, HashMap<String, Double>>();
+        this.values = new ArrayList<>();
+        this.values.addAll(values);
+        this.parents = new ArrayList<>();
+        this.parents.addAll(parents);
+//        cpt = new HashMap<String, HashMap<String, Double>>();
+        cpt = new CPT();
     }
 
     public void addEntry(String parent_key, String self_key, double probability){
-//        HashMap<String, Double> entry = new HashMap<String, Double>();
-//        entry.put(self_key,probability);
-//        cpt.put(parent_key, entry);
-        if(!cpt.containsKey(parent_key))
-            cpt.put(parent_key, new HashMap<String, Double>());
-        cpt.get(parent_key).put(self_key,probability);
+////        HashMap<String, Double> entry = new HashMap<String, Double>();
+////        entry.put(self_key,probability);
+////        cpt.put(parent_key, entry);
+//        if(!cpt.containsKey(parent_key))
+//            cpt.put(parent_key, new HashMap<String, Double>());
+//        cpt.get(parent_key).put(self_key,probability);
+        cpt.addEntry(parent_key,self_key, probability);
     }
 
-    public HashMap<String, HashMap<String, Double>> getCpt() {
+//    public HashMap<String, HashMap<String, Double>> getCpt() {
+//        return cpt;
+//    }
+
+    public CPT getCpt() {
         return cpt;
     }
 
-    public void printCPT(){
-        for (String key : cpt.keySet()) {
-            for (String entry : cpt.get(key).keySet()) {
-                System.out.println(key+": "+entry+"="+cpt.get(key).get(entry));
-            }
-        }
-//        System.out.println(cpt);
-    }
+
+//    public void printCPT(){
+//        for (String key : cpt.keySet()) {
+//            for (String entry : cpt.get(key).keySet()) {
+//                System.out.println(key+": "+entry+"="+cpt.get(key).get(entry));
+//            }
+//        }
+////        System.out.println(cpt);
+//    }
 
     public ArrayList<String> getValues() {
         return values;
