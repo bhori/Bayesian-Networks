@@ -9,6 +9,14 @@ public class Factor {
     private int id;
     private static int key = 0;
 
+    public HashMap<String, Double> getTable() {
+        return table;
+    }
+
+    public ArrayList<String> getName() {
+        return name;
+    }
+
     public Factor(Variable var, HashMap<String, String> evidence) {
         id =++key;
         CPT cpt = var.getCpt();
@@ -97,6 +105,10 @@ public class Factor {
             }
         }
         System.out.println(table);
+    }
+
+    public double getEntry(String key){
+        return table.get(key);
     }
 
 //    private boolean isEvidence(String parent_key, HashMap<String, String> evidence){
