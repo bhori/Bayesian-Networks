@@ -42,7 +42,7 @@ public class Factor {
 //                name.add(parent_name);
 //            }
             Collections.sort(name);
-            System.out.println(name.toString());
+            System.out.println(id+"\n"+name.toString());
             for (String value : var.getValues()) {
                 for (String parents_key : cpt.getCpt().keySet()) {
                     if(!parents_key.contains(parent_evidence))
@@ -79,7 +79,7 @@ public class Factor {
 //                name.add(parent_name);
 //            }
             Collections.sort(name);
-            System.out.println(name.toString());
+            System.out.println(id+"\n"+name.toString());
             String value = evidence.get(var.getName());
             for (String parents_key : cpt.getCpt().keySet()) {
                 if(!parents_key.contains(parent_evidence))
@@ -105,6 +105,14 @@ public class Factor {
             }
         }
         System.out.println(table);
+    }
+
+    public Factor(ArrayList<String> name, HashMap<String, Double> table){
+        id =++key;
+        this.name = name;
+        Collections.sort(name);
+        this.table = table;
+        System.out.println(name+"\n"+table);
     }
 
     public double getEntry(String key){

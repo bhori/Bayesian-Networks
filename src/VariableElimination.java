@@ -2,6 +2,8 @@ import java.text.DecimalFormat;
 import java.util.*;
 
 public class VariableElimination {
+    private static int multi_count;
+    private static int add_count;
 
     private static boolean chekIfCPT(BayesianNetwork network, String query_var_name, Set<String> evidence_var_names){
         Variable query_var = network.getVariable(query_var_name);
@@ -30,13 +32,27 @@ public class VariableElimination {
         return it.next();
     }
 
-    private static ArrayList<Factor> initialFactors(BayesianNetwork network, HashMap<String, String> evidence){
+    private static boolean check_relation(BayesianNetwork network, HashMap<String, String> query_var, HashMap<String, String> evidence, Variable var){
+        if(query_var.containsKey(var.getName()) || evidence.containsKey(var.getName()))
+            return true;
+        for (String parent : var.getParents()) {
+            if(check_relation(network, query_var, evidence, network.getVariable(parent)))
+                return true;
+        }
+        return false;
+    }
+
+
+    private static ArrayList<Factor> initialFactors(BayesianNetwork network, HashMap<String, String> query_var, HashMap<String, String> evidence){
         ArrayList<Factor> factors = new ArrayList<>();
         for (Variable var : network.getVariables()) {
-            Factor f = new Factor(var, evidence);
-            if(f.getTable().size()>1)
-                factors.add(f);
+//            if(check_relation(network, query_var, evidence, var)) {
+                Factor f = new Factor(var, evidence);
+                if (f.getTable().size() > 1)
+                    factors.add(f);
+//            }
         }
+        // Can 'factors' be empty??
         return factors;
     }
 
@@ -46,58 +62,266 @@ public class VariableElimination {
             if(factor.getName().contains(hidden_var_name))
                 hidden_var_factors.add(factor);
         }
+        // Can 'hidden_var_factors' be empty??
         return hidden_var_factors;
     }
 
-    private static Factor join(Factor f1, Factor f2){
-
-        return null;
+    private static ArrayList<String> getCommonVariables(Factor f1, Factor f2){
+        ArrayList<String> common_vars = new ArrayList<>();
+        for (String var_name : f1.getName()) {
+            if(f2.getName().contains(var_name))
+                common_vars.add(var_name);
+        }
+        return common_vars;
     }
 
-    private static void eliminate(Factor f, String hidden_var_name){
-
+    private static ArrayList<ArrayList<String>> getCommonVariablesValues(BayesianNetwork network, ArrayList<String> common_vars) {
+        ArrayList<ArrayList<String>> common_variables_values = new ArrayList<>();
+        for (String var_name : common_vars) {
+            ArrayList<String> tmp = new ArrayList<>();
+            for (String value : network.getVariable(var_name).getValues()) {
+                tmp.add(new String(value));
+            }            for (int i = 0; i < tmp.size(); i++) {
+                if(!tmp.get(i).contains("="))
+                    tmp.set(i, var_name+"="+tmp.get(i));
+            }
+            common_variables_values.add(tmp);
+        }
+        return common_variables_values;
     }
 
-    private static void normalize(Factor f){
+    private static ArrayList<ArrayList<String>> getDifferentVariablesValues(BayesianNetwork network, ArrayList<String> different_vars) {
+        ArrayList<ArrayList<String>> different_variables_values = new ArrayList<>();
+        for (String var_name : different_vars) {
+            ArrayList<String> tmp = new ArrayList<>();
+            for (String value : network.getVariable(var_name).getValues()) {
+                tmp.add(new String(value));
+            }
+            for (int i = 0; i < tmp.size(); i++) {
+                tmp.set(i, var_name+"="+tmp.get(i));
+            }
+            different_variables_values.add(tmp);
+        }
+        return different_variables_values;
+    }
 
+    private static ArrayList<String> getDifferentVariables(Factor f1, Factor f2){
+        ArrayList<String> different_vars = new ArrayList<>();
+        for (String var_name : f1.getName()) {
+            if(!f2.getName().contains(var_name))
+                different_vars.add(var_name);
+        }
+        for (String var_name : f2.getName()) {
+            if(!f1.getName().contains(var_name))
+                different_vars.add(var_name);
+        }
+        return different_vars;
+    }
+
+    private static <T> List<List<T>> cartesianProduct(List<T>... lists) {
+
+        List<List<T>> product = new ArrayList<List<T>>();
+
+        for (List<T> list : lists) {
+
+            List<List<T>> newProduct = new ArrayList<List<T>>();
+
+            for (T listElement : list) {
+
+                if (product.isEmpty()) {
+
+                    List<T> newProductList = new ArrayList<T>();
+                    newProductList.add(listElement);
+                    newProduct.add(newProductList);
+                } else {
+
+                    for (List<T> productList : product) {
+
+                        List<T> newProductList = new ArrayList<T>(productList);
+                        newProductList.add(listElement);
+                        newProduct.add(newProductList);
+                    }
+                }
+            }
+
+            product = newProduct;
+        }
+
+        return product;
+    }
+
+//TODO: Change to private!
+    public static Factor join(BayesianNetwork network, Factor f1, Factor f2){
+        ArrayList<String> name = new ArrayList<>();
+        HashMap<String, Double> table = new HashMap<>();
+        ArrayList<String> common_vars = getCommonVariables(f1, f2);
+        ArrayList<String> different_vars = getDifferentVariables(f1, f2);
+        name.addAll(common_vars);
+        name.addAll(different_vars);
+        ArrayList<ArrayList<String>> common_vars_values = getCommonVariablesValues(network, common_vars);
+        List<List<String>> all_common_vars_combinations = cartesianProduct(common_vars_values.toArray(new ArrayList[]{new ArrayList<ArrayList<String>>()}));
+        if(different_vars.size()>0) {
+            ArrayList<ArrayList<String>> different_vars_values = getDifferentVariablesValues(network, different_vars);
+            List<List<String>> all_different_vars_combinations = cartesianProduct(different_vars_values.toArray(new ArrayList[]{new ArrayList<ArrayList<String>>()}));
+            for (List<String> different_vars_combination : all_different_vars_combinations) {
+                ArrayList<String> key_list = new ArrayList<>(different_vars_combination);
+                for (List<String> common_vars_combination : all_common_vars_combinations) {
+                    ArrayList<String> f1_key_list = new ArrayList<>(common_vars_combination);
+                    ArrayList<String> f2_key_list = new ArrayList<>(common_vars_combination);
+                    for (String var : different_vars_combination) {
+                        String[] str;
+                        if (var.contains(",")) {
+                            str = var.split(",");
+                        } else {
+                            str = new String[1];
+                            str[0] = var;
+                        }
+                        for (String s : str) {
+                            if (f1.getName().contains(s.substring(0, s.indexOf('=')))) {
+                                f1_key_list.add(s);
+                            } else {
+                                f2_key_list.add(s);
+                            }
+                        }
+                    }
+                    Collections.sort(f1_key_list);
+                    Collections.sort(f2_key_list);
+                    String f1_key = String.join(",", f1_key_list.toArray(new String[f1_key_list.size()]));
+                    String f2_key = String.join(",", f2_key_list.toArray(new String[f2_key_list.size()]));
+                    double f1_value = f1.getEntry(f1_key);
+                    double f2_value = f2.getEntry(f2_key);
+                    key_list.addAll(common_vars_combination);
+                    Collections.sort(key_list);
+                    String key = String.join(",", key_list.toArray(new String[key_list.size()]));
+                    table.put(key, f1_value * f2_value);
+                    multi_count++;
+                    key_list.removeAll(common_vars_combination);
+                }
+            }
+        }else{
+            for (List<String> common_vars_combination : all_common_vars_combinations) {
+                ArrayList<String> key_list = new ArrayList<>(common_vars_combination);
+                Collections.sort(key_list);
+                String key = String.join(",", key_list.toArray(new String[key_list.size()]));
+                double f1_value = f1.getEntry(key);
+                double f2_value = f2.getEntry(key);
+                table.put(key, f1_value * f2_value);
+                multi_count++;
+                //Maybe this is redundant..
+                key_list.removeAll(common_vars_combination);
+
+            }
+        }
+        return new Factor(name, table);
+    }
+
+    private static Factor eliminate(BayesianNetwork network, Factor f, String hidden_var_name){
+        HashMap<String, Double> table = new HashMap<>();
+        Set<String> new_keys = new HashSet<>();
+        for (String f_key : f.getTable().keySet()) {
+            String key = "";
+            for (String hidden_var_value : network.getVariable(hidden_var_name).getValues()) {
+                if(f_key.contains(hidden_var_name+"="+hidden_var_value)){
+                    key = new String(f_key);
+                    key = key.replace(hidden_var_name+"="+hidden_var_value, "");
+                    if(key.contains(",,"))
+                        key = key.replace(",,",",");
+                    if(key.startsWith(","))
+                        key = key.substring(1);
+                    if(key.endsWith(","))
+                        key = key.substring(0, key.length()-1);
+                }
+            }
+            new_keys.add(key);
+        }
+        for (String new_key : new_keys) {
+            String key = "";
+            double value = 0;
+            for (String hidden_var_value : network.getVariable(hidden_var_name).getValues()) {
+                ArrayList<String> key_list;
+                if(new_key.contains(",")){
+                    key_list = new ArrayList<>(Arrays.asList(new_key.split(",")));
+                }else{
+                    key_list = new ArrayList<>();
+                    key_list.add(new_key);
+                }
+                key_list.add(hidden_var_name+"="+hidden_var_value);
+                Collections.sort(key_list);
+                key = String.join(",", key_list);
+                value+=f.getEntry(key);
+                add_count++;
+//                if(f_key.contains(hidden_var_name+"="+hidden_var_value)){
+//                    key = new String(f_key);
+//                    key = key.replace(hidden_var_name+"="+hidden_var_value, "");
+//                    if(key.contains(",,"))
+//                        key = key.replace(",,",",");
+//                    if(key.startsWith(","))
+//                        key = key.substring(1);
+//                    if(key.endsWith(","))
+//                        key = key.substring(0, key.length()-1);
+//                    value+=f.getEntry(f_key);
+////                    table.put(key, value);
+//                }
+            }
+            table.put(new_key, value);
+        }
+
+        ArrayList<String> name = f.getName();
+        name.remove(hidden_var_name);
+        return new Factor(name, table);
+    }
+
+    private static Factor normalize(Factor f){
+        HashMap<String, Double> table = new HashMap<>();
+        double sum_of_values = 0;
+        for (double value : f.getTable().values()) {
+            sum_of_values+=value;
+            add_count++;
+        }
+        double value;
+        for (String key : f.getTable().keySet()) {
+            value = f.getEntry(key)/sum_of_values;
+            table.put(key, value);
+        }
+        return new Factor(f.getName(), table);
     }
 
     public static String variableElimination(BayesianNetwork network, HashMap<String, String> query_var, HashMap<String, String> evidence){
-        int multi_count = 0;
-        int add_count = 0;
+        multi_count = 0;
+        add_count = 0;
         String result = "";
         String query_var_name = getQueryVarName(query_var);
         DecimalFormat df = new DecimalFormat("#.#####");
         if(chekIfCPT(network, query_var_name, evidence.keySet())){
             result = df.format(getResultFromCPT(network.getVariable(query_var_name), query_var, evidence));
         }else {
-            ArrayList<Factor> factors = initialFactors(network, evidence);
-            ArrayList<String> hidden = new ArrayList<>();
+            ArrayList<Factor> factors = initialFactors(network, query_var, evidence);
+            ArrayList<String> hidden_vars = new ArrayList<>();
 //            ArrayList<ArrayList<String>> hidden_values = new ArrayList<>();
             for (Variable var : network.getNetwork().values()) {
                 if (!evidence.containsKey(var.getName()) && !query_var.containsKey(var.getName())) {
-                    hidden.add(var.getName());
+                    hidden_vars.add(var.getName());
 //                    hidden_values.add(var.getValues());
                 }
             }
-            Collections.sort(hidden);
-            for (String hidden_var_name : hidden) {
+            Collections.sort(hidden_vars);
+            for (String hidden_var_name : hidden_vars) {
                 ArrayList<Factor> hidden_var_factors = hiddenVarFactors(factors, hidden_var_name);
                 //TODO: What if there is no elements in the ArrayList? Can this happen at all??
                 Factor multi_factor = hidden_var_factors.get(0);
                 factors.remove(multi_factor);
                 for (int i = 1; i < hidden_var_factors.size(); i++) {
-                    multi_factor = join(multi_factor, hidden_var_factors.get(i));
+                    multi_factor = join(network, multi_factor, hidden_var_factors.get(i));
                     factors.remove(hidden_var_factors.get(i));
                 }
-                eliminate(multi_factor, hidden_var_name);
-                factors.add(multi_factor);
+                Factor eliminate_factor = eliminate(network, multi_factor, hidden_var_name);
+                factors.add(eliminate_factor);
             }
             Factor final_factor = factors.get(0);
             for (int i = 1; i < factors.size(); i++) {
-                final_factor = join(final_factor, factors.get(i));
+                final_factor = join(network, final_factor, factors.get(i));
             }
-            normalize(final_factor);
+            final_factor = normalize(final_factor);
             String key = query_var_name+"="+query_var.get(query_var_name);
             result = df.format(final_factor.getEntry(key));
         }

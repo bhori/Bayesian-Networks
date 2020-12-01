@@ -87,6 +87,7 @@ public class SimpleInference {
             current_values.put(hidden.get(i).getName(), combination.get(i));
         }
         for (Variable v : network.getVariables()) {
+            //TODO: Ignore cases in which the probability is zero!
             local_prob *= getVarProb(v, current_values);
             multi_count++;
         }
@@ -133,9 +134,11 @@ public class SimpleInference {
             for (String value : network.getVariable(query_var_name).getValues()) { // Compute the probability for every value of the query var
                 double prob = 0;
                 if (hidden.size() > 0) {
-                    List<List<String>> comb = cartesianProduct(hidden_values.toArray(new ArrayList[]{new ArrayList<ArrayList<String>>()}));
-                    for (List<String> combination : comb) {
-                        prob+= getLocalProb(query_var_name, value, network, combination, evidence, hidden);
+                    List<List<String>> all_combinations = cartesianProduct(hidden_values.toArray(new ArrayList[]{new ArrayList<ArrayList<String>>()}));
+//                    System.out.println(all_combinations);
+                    for (List<String> combination : all_combinations) {
+//                        System.out.println(combination);
+                        prob += getLocalProb(query_var_name, value, network, combination, evidence, hidden);
                         add_count++;
                     }
                 } else {

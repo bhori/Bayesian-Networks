@@ -54,7 +54,7 @@ public class Ex1 {
                     }
                     parent_key = String.join(",", parent_arr);
                 }
-                System.out.println(parent_key);
+//                System.out.println(parent_key);
                 while(entries.contains("=")){
                     entries = entries.substring(entries.indexOf('=')+1);
                     if(entries.contains("=")) {
@@ -114,20 +114,32 @@ public class Ex1 {
         BayesianNetwork network = createNetwork(in);
         in.nextLine(); // "Queries"
         StringBuilder summary = new StringBuilder();
+        int i = 1;
         while(in.hasNextLine()){
             if(summary.length()>0)
                 summary.append("\n");
             Query query = readQuery(in);
-//            System.out.println(new Factor(network.getVariable(query.getQueryVariable().keySet().toString().substring(1,2)), query.getEvidenceVariables()));
-//            System.out.println(new Factor(network.getVariable("A"), query.getEvidenceVariables()));
-            System.out.println("\n"+new Factor(network.getVariable("B"), query.getEvidenceVariables()));
-            System.out.println("\n"+new Factor(network.getVariable("E"), query.getEvidenceVariables()));
-            System.out.println("\n"+new Factor(network.getVariable("A"), query.getEvidenceVariables()));
-            System.out.println("\n"+new Factor(network.getVariable("J"), query.getEvidenceVariables()));
-            System.out.println("\n"+new Factor(network.getVariable("M"), query.getEvidenceVariables()));
+////            System.out.println(new Factor(network.getVariable(query.getQueryVariable().keySet().toString().substring(1,2)), query.getEvidenceVariables()));
+////            System.out.println(new Factor(network.getVariable("A"), query.getEvidenceVariables()));
+//            System.out.println("\n"+new Factor(network.getVariable("B"), query.getEvidenceVariables()));
+//            System.out.println("\n"+new Factor(network.getVariable("E"), query.getEvidenceVariables()));
+//            Factor r = new Factor(network.getVariable("A"), query.getEvidenceVariables());
+//            System.out.println("\n"+r);
+//            System.out.println("\n"+new Factor(network.getVariable("J"), query.getEvidenceVariables()));
+//            System.out.println("\n"+new Factor(network.getVariable("M"), query.getEvidenceVariables()));
+//            if(i==1) {
+//                Factor f = VariableElimination.join(network, new Factor(network.getVariable("J"), query.getEvidenceVariables()), new Factor(network.getVariable("M"), query.getEvidenceVariables()));
+//                System.out.println("***************\n" + VariableElimination.join(network, f, r));
+//            }
 
 
-            summary.append(SimpleInference.simpleInference(network, query.getQueryVariable(), query.getEvidenceVariables()));
+            if(i==2 || i==5) {
+                summary.append(VariableElimination.variableElimination(network, query.getQueryVariable(), query.getEvidenceVariables()));
+            }else{
+                summary.append(SimpleInference.simpleInference(network, query.getQueryVariable(), query.getEvidenceVariables()));
+            }
+//            summary.append(SimpleInference.simpleInference(network, query.getQueryVariable(), query.getEvidenceVariables()));
+            i++;
         }
         System.out.println(summary);
         saveToFile(summary.toString());
