@@ -32,25 +32,33 @@ public class VariableElimination {
         return it.next();
     }
 
-    private static boolean check_relation(BayesianNetwork network, HashMap<String, String> query_var, HashMap<String, String> evidence, Variable var){
-        if(query_var.containsKey(var.getName()) || evidence.containsKey(var.getName()))
+    private static Set<String> getAncestors(BayesianNetwork network, String var_name){
+        Set<String> ancestors = new HashSet<>();
+        ancestors.addAll(network.getVariable(var_name).getParents());
+        for (String parent : network.getVariable(var_name).getParents()) {
+            ancestors.addAll(getAncestors(network, parent));
+        }
+        return ancestors;
+    }
+
+    private static boolean check_relation(BayesianNetwork network, HashMap<String, String> query_var, HashMap<String, String> evidence, Variable var) {
+        if (query_var.containsKey(var.getName()) || evidence.containsKey(var.getName()) || getAncestors(network, getQueryVarName(query_var)).contains(var.getName()))
             return true;
-        for (String parent : var.getParents()) {
-            if(check_relation(network, query_var, evidence, network.getVariable(parent)))
+        for (String evidence_var : evidence.keySet()) {
+            if(getAncestors(network, evidence_var).contains(var.getName()))
                 return true;
         }
         return false;
     }
 
-
     private static ArrayList<Factor> initialFactors(BayesianNetwork network, HashMap<String, String> query_var, HashMap<String, String> evidence){
         ArrayList<Factor> factors = new ArrayList<>();
         for (Variable var : network.getVariables()) {
-//            if(check_relation(network, query_var, evidence, var)) {
+            if(check_relation(network, query_var, evidence, var)) {
                 Factor f = new Factor(var, evidence);
                 if (f.getTable().size() > 1)
                     factors.add(f);
-//            }
+            }
         }
         // Can 'factors' be empty??
         return factors;
@@ -247,7 +255,11 @@ public class VariableElimination {
                 }
                 key_list.add(hidden_var_name+"="+hidden_var_value);
                 Collections.sort(key_list);
-                key = String.join(",", key_list);
+                if(new_key.length()>0) {
+                    key = String.join(",", key_list);
+                }else {
+                    key = String.join("", key_list);
+                }
                 value+=f.getEntry(key);
                 add_count++;
 //                if(f_key.contains(hidden_var_name+"="+hidden_var_value)){
@@ -263,6 +275,7 @@ public class VariableElimination {
 ////                    table.put(key, value);
 //                }
             }
+            add_count--;
             table.put(new_key, value);
         }
 
@@ -283,7 +296,30 @@ public class VariableElimination {
             value = f.getEntry(key)/sum_of_values;
             table.put(key, value);
         }
+        add_count--;
         return new Factor(f.getName(), table);
+    }
+
+    private static ArrayList<Factor> multiply_order(BayesianNetwork network, ArrayList<Factor> hidden_var_factors){
+//        ArrayList<ArrayList<Factor>> matrix = new ArrayList<>();
+        int[][] matrix = new int[hidden_var_factors.size()][hidden_var_factors.size()];
+        for (int i = 0; i < matrix.length; i++) {
+            for (int j = 0; j < matrix[0].length; j++) {
+                if(i!=j){
+                    Factor f1 = hidden_var_factors.get(i);
+                    Factor f2 = hidden_var_factors.get(j);
+                    Set<String> name = new HashSet<>(f1.getName());
+//                    ArrayList<String> name = f1.getName();
+                    name.addAll(f2.getName());
+                    int values_product = 1;
+                    for (String var_name : name) {
+                        values_product*=network.getVariable(var_name).getValues().size();
+                    }
+                    matrix[i][j]=values_product-Math.max(f1.getTable().size(), f2.getTable().size());
+                }
+            }
+        }
+        return null;
     }
 
     public static String variableElimination(BayesianNetwork network, HashMap<String, String> query_var, HashMap<String, String> evidence){
@@ -306,14 +342,21 @@ public class VariableElimination {
             }
             Collections.sort(hidden_vars);
             for (String hidden_var_name : hidden_vars) {
+                if(!check_relation(network, query_var, evidence, network.getVariable(hidden_var_name)))
+                    continue;
                 ArrayList<Factor> hidden_var_factors = hiddenVarFactors(factors, hidden_var_name);
                 //TODO: What if there is no elements in the ArrayList? Can this happen at all??
                 Factor multi_factor = hidden_var_factors.get(0);
+//                Factor multi_factor = hidden_var_factors.get(hidden_var_factors.size()-1);
                 factors.remove(multi_factor);
                 for (int i = 1; i < hidden_var_factors.size(); i++) {
                     multi_factor = join(network, multi_factor, hidden_var_factors.get(i));
                     factors.remove(hidden_var_factors.get(i));
                 }
+//                for (int i = hidden_var_factors.size()-2; i >= 0; i--) {
+//                    multi_factor = join(network, multi_factor, hidden_var_factors.get(i));
+//                    factors.remove(hidden_var_factors.get(i));
+//                }
                 Factor eliminate_factor = eliminate(network, multi_factor, hidden_var_name);
                 factors.add(eliminate_factor);
             }
