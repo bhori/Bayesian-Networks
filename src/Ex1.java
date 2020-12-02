@@ -114,7 +114,8 @@ public class Ex1 {
         BayesianNetwork network = createNetwork(in);
         in.nextLine(); // "Queries"
         StringBuilder summary = new StringBuilder();
-        int i = 1;
+//        int i = 1;
+        boolean with_heuristic = false;
         while(in.hasNextLine()){
             if(summary.length()>0)
                 summary.append("\n");
@@ -131,15 +132,27 @@ public class Ex1 {
 //                Factor f = VariableElimination.join(network, new Factor(network.getVariable("J"), query.getEvidenceVariables()), new Factor(network.getVariable("M"), query.getEvidenceVariables()));
 //                System.out.println("***************\n" + VariableElimination.join(network, f, r));
 //            }
-
-
-            if(i==2 || i==5) {
-                summary.append(VariableElimination.variableElimination(network, query.getQueryVariable(), query.getEvidenceVariables()));
-            }else{
-                summary.append(SimpleInference.simpleInference(network, query.getQueryVariable(), query.getEvidenceVariables()));
+            switch (query.getAlgo()){
+                case 1:
+                    summary.append(SimpleInference.simpleInference(network, query.getQueryVariable(), query.getEvidenceVariables()));
+                    break;
+                case 2:
+                    with_heuristic = false;
+                    summary.append(VariableElimination.variableElimination(network, query.getQueryVariable(), query.getEvidenceVariables(), with_heuristic));
+                    break;
+                case 3:
+                    with_heuristic = true;
+                    summary.append(VariableElimination.variableElimination(network, query.getQueryVariable(), query.getEvidenceVariables(), with_heuristic));
+                    break;
             }
+
+//            if(i==2 || i==5) {
+//                summary.append(VariableElimination.variableElimination(network, query.getQueryVariable(), query.getEvidenceVariables(), with_heuristic));
+//            }else{
+//                summary.append(SimpleInference.simpleInference(network, query.getQueryVariable(), query.getEvidenceVariables()));
+//            }
 //            summary.append(SimpleInference.simpleInference(network, query.getQueryVariable(), query.getEvidenceVariables()));
-            i++;
+//            i++;
         }
         System.out.println(summary);
         saveToFile(summary.toString());

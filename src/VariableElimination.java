@@ -322,7 +322,61 @@ public class VariableElimination {
         return null;
     }
 
-    public static String variableElimination(BayesianNetwork network, HashMap<String, String> query_var, HashMap<String, String> evidence){
+    // function to sort hashmap by values
+    private static HashMap<String, Integer> sortByValue(HashMap<String, Integer> hm)
+    {
+        // Create a list from elements of HashMap
+        List<Map.Entry<String, Integer> > list =
+                new LinkedList<Map.Entry<String, Integer> >(hm.entrySet());
+
+        // Sort the list
+        Collections.sort(list, new Comparator<Map.Entry<String, Integer> >() {
+            public int compare(Map.Entry<String, Integer> o1,
+                               Map.Entry<String, Integer> o2)
+            {
+                return (o1.getValue()).compareTo(o2.getValue());
+            }
+        });
+
+        // put data from sorted list to hashmap
+        HashMap<String, Integer> temp = new LinkedHashMap<String, Integer>();
+        for (Map.Entry<String, Integer> aa : list) {
+            temp.put(aa.getKey(), aa.getValue());
+        }
+        return temp;
+    }
+
+    private static ArrayList<String> heuristicOrder(BayesianNetwork network, ArrayList<String> hidden_vars){
+        ArrayList<String> ordered = new ArrayList<>();
+        HashMap<String, Integer> weights = new HashMap<>();
+        for (String hidden_var : hidden_vars) {
+            ArrayList<Variable> neighbors = new ArrayList<>();
+            for (String parent : network.getVariable(hidden_var).getParents())
+                neighbors.add(network.getVariable(parent));
+            for (Variable var : network.getVariables()) {
+                if (var.getParents().contains(hidden_var)){
+                    neighbors.add(var);
+                    for (String parent : var.getParents()) {
+                        if(!parent.equals(hidden_var))
+                            neighbors.add(network.getVariable(parent));
+                    }
+                }
+            }
+            int weight = 1;
+            for (Variable var : neighbors) {
+                weight *= var.getValues().size();
+            }
+            weights.put(hidden_var, weight);
+            //TODO: need to remove 'hidden_var' from it's neighbors lists and add edges between any two neighbors of it.
+        }
+        weights = sortByValue(weights);
+        for (Map.Entry<String, Integer> entry : weights.entrySet()) {
+            ordered.add(entry.getKey());
+        }
+        return ordered;
+    }
+
+    public static String variableElimination(BayesianNetwork network, HashMap<String, String> query_var, HashMap<String, String> evidence, boolean with_heuristic){
         multi_count = 0;
         add_count = 0;
         String result = "";
@@ -340,7 +394,11 @@ public class VariableElimination {
 //                    hidden_values.add(var.getValues());
                 }
             }
-            Collections.sort(hidden_vars);
+            if(with_heuristic){
+                hidden_vars = heuristicOrder(network, hidden_vars);
+            }else {
+                Collections.sort(hidden_vars);
+            }
             for (String hidden_var_name : hidden_vars) {
                 if(!check_relation(network, query_var, evidence, network.getVariable(hidden_var_name)))
                     continue;
