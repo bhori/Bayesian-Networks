@@ -1,23 +1,14 @@
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.PrintWriter;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Scanner;
+import java.util.*;
 
 public class Ex1 {
 
-    private static void readVariable(){
-
-    }
-
     private static BayesianNetwork createNetwork(Scanner in) {
-//        Scanner in = new Scanner(new FileReader("input.txt"));
         in.nextLine(); // "Network"
         in.skip("Variables: ");
         ArrayList<String> variables = new ArrayList<>(Arrays.asList(in.nextLine().split(",")));
-//        System.out.println(variables);
         in.nextLine(); // Skip the empty line
         BayesianNetwork network = new BayesianNetwork();
         // Read each variable
@@ -26,7 +17,6 @@ public class Ex1 {
             String name = in.nextLine();
             in.skip("Values: ");
             ArrayList<String> values = new ArrayList<>(Arrays.asList(in.nextLine().split(",")));
-//            System.out.println(values);
             in.skip("Parents: ");
             ArrayList<String> parents;
             String parent = in.nextLine();
@@ -34,7 +24,6 @@ public class Ex1 {
                 parents = new ArrayList<>();
             }else{
                 parents = new ArrayList<>(Arrays.asList(parent.split(",")));
-//                System.out.println(parents);
             }
             Variable variable = new Variable(name, values, parents);
             in.nextLine(); // "CPT:"
@@ -52,9 +41,16 @@ public class Ex1 {
                     for (int j = 0; j < parent_arr.length; j++) {
                         parent_arr[j] = parents.get(j) + "=" + parent_arr[j];
                     }
-                    parent_key = String.join(",", parent_arr);
+
+
+                    ArrayList<String> s = new ArrayList<>(Arrays.asList(parent_arr));
+                    Collections.sort(s);
+                    parent_key = String.join(",", s.toArray(new String[s.size()]));
+                    Collections.sort(variable.getParents());
+
+
+//                    parent_key = String.join(",", parent_arr);
                 }
-//                System.out.println(parent_key);
                 while(entries.contains("=")){
                     entries = entries.substring(entries.indexOf('=')+1);
                     if(entries.contains("=")) {
@@ -73,10 +69,8 @@ public class Ex1 {
                         variable.addEntry(parent_key,value,complementary);
                 }
             }
-//            variable.printCPT();
             network.addVariable(variable);
         }
-//        System.out.println(network);
         return network;
     }
 
@@ -110,12 +104,11 @@ public class Ex1 {
 
 
     public static void main(String[] args) throws IOException {
-        Scanner in = new Scanner(new FileReader("input.txt"));
+        Scanner in = new Scanner(new FileReader("input2.txt"));
         BayesianNetwork network = createNetwork(in);
         in.nextLine(); // "Queries"
         StringBuilder summary = new StringBuilder();
-//        int i = 1;
-        boolean with_heuristic = false;
+        boolean with_heuristic;
         while(in.hasNextLine()){
             if(summary.length()>0)
                 summary.append("\n");
@@ -132,28 +125,19 @@ public class Ex1 {
 //                Factor f = VariableElimination.join(network, new Factor(network.getVariable("J"), query.getEvidenceVariables()), new Factor(network.getVariable("M"), query.getEvidenceVariables()));
 //                System.out.println("***************\n" + VariableElimination.join(network, f, r));
 //            }
-            switch (query.getAlgo()){
-                case 1:
-                    summary.append(SimpleInference.simpleInference(network, query.getQueryVariable(), query.getEvidenceVariables()));
-                    break;
-                case 2:
+            switch (query.getAlgo()) {
+                case 1 -> summary.append(SimpleInference.simpleInference(network, query.getQueryVariable(), query.getEvidenceVariables()));
+                case 2 -> {
                     with_heuristic = false;
                     summary.append(VariableElimination.variableElimination(network, query.getQueryVariable(), query.getEvidenceVariables(), with_heuristic));
-                    break;
-                case 3:
+                }
+                case 3 -> {
                     with_heuristic = true;
                     summary.append(VariableElimination.variableElimination(network, query.getQueryVariable(), query.getEvidenceVariables(), with_heuristic));
-                    break;
+                }
             }
-
-//            if(i==2 || i==5) {
-//                summary.append(VariableElimination.variableElimination(network, query.getQueryVariable(), query.getEvidenceVariables(), with_heuristic));
-//            }else{
-//                summary.append(SimpleInference.simpleInference(network, query.getQueryVariable(), query.getEvidenceVariables()));
-//            }
-//            summary.append(SimpleInference.simpleInference(network, query.getQueryVariable(), query.getEvidenceVariables()));
-//            i++;
         }
+        // TODO: Delete this line before submission!
         System.out.println(summary);
         saveToFile(summary.toString());
     }

@@ -32,10 +32,6 @@ public class BayesianNetwork {
     }
 
     public String toString(){
-        String base_network ="";
-//        for (Variable var : network) {
-//
-//        }
         return network.toString();
     }
 }

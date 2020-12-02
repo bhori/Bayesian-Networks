@@ -9,14 +9,6 @@ public class Factor {
     private int id;
     private static int key = 0;
 
-    public HashMap<String, Double> getTable() {
-        return table;
-    }
-
-    public ArrayList<String> getName() {
-        return name;
-    }
-
     public Factor(Variable var, HashMap<String, String> evidence) {
         id =++key;
         CPT cpt = var.getCpt();
@@ -29,18 +21,13 @@ public class Factor {
                     parent_evidence += parent + "=" + evidence.get(parent);
                 }else{
                     parent_evidence += ","+parent + "=" + evidence.get(parent);
-
                 }
-//                name.remove(parent);
             }else{
                 name.add(parent);
             }
         }
         if(!evidence.containsKey(var.getName())){
             name.add(var.getName());
-//            for (String parent_name: var.getParents()) {
-//                name.add(parent_name);
-//            }
             Collections.sort(name);
             System.out.println(id+"\n"+name.toString());
             for (String value : var.getValues()) {
@@ -71,13 +58,9 @@ public class Factor {
                         key = String.join(",", s.toArray(new String[s.size()]));
                     }
                     table.put(key, probability);
-
                 }
             }
         }else{
-//            for (String parent_name: var.getParents()) {
-//                name.add(parent_name);
-//            }
             Collections.sort(name);
             System.out.println(id+"\n"+name.toString());
             String value = evidence.get(var.getName());
@@ -115,11 +98,16 @@ public class Factor {
         System.out.println(name+"\n"+table);
     }
 
+    public HashMap<String, Double> getTable() {
+        return table;
+    }
+
+    public ArrayList<String> getName() {
+        return name;
+    }
+
     public double getEntry(String key){
         return table.get(key);
     }
 
-//    private boolean isEvidence(String parent_key, HashMap<String, String> evidence){
-//        return evidence.containsKey(parent_key.substring(0,parent_key.indexOf('=')));
-//    }
 }
