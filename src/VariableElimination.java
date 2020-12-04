@@ -20,6 +20,7 @@ public class VariableElimination {
         for (String parent : var.getParents()) {
             parents_key.append(parent).append("=").append(evidence.get(parent)).append(",");
         }
+//        if(var.getParents().size()>0)
         parents_key = new StringBuilder(parents_key.substring(0, parents_key.length() - 1));
         String self_key = query_var.get(var.getName());
 //        return var.getCpt().get(parents_key.toString()).get(self_key);

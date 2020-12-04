@@ -5,8 +5,13 @@ import java.util.*;
 
 public class Ex1 {
 
+    /**
+     * Reads the content of the network and creates the Bayesian network
+     * @param in - Scanner object for reading from the text file
+     * @return Bayesian network which created from the content in the text file // "input.txt"
+     */
     private static BayesianNetwork createNetwork(Scanner in) {
-        in.nextLine(); // "Network"
+        in.nextLine(); // Skip the "Network" line
         in.skip("Variables: ");
         ArrayList<String> variables = new ArrayList<>(Arrays.asList(in.nextLine().split(",")));
         in.nextLine(); // Skip the empty line
@@ -26,13 +31,13 @@ public class Ex1 {
                 parents = new ArrayList<>(Arrays.asList(parent.split(",")));
             }
             Variable variable = new Variable(name, values, parents);
-            in.nextLine(); // "CPT:"
+            in.nextLine(); // Skip the "CPT:" line
             String entries = "";
             String entry = "";
             double probability = 0;
             // TODO: if there is no parents then the '=' is the first character! I need to take care of that!!
             while((entries = in.nextLine()).contains("=")){
-                double complementary = 1;
+                double complementary = 1; // For the last value that is not represented in the file
                 String parent_key = "";
                 String self_key = "";
                 if(parents.size()!=0) {
@@ -74,6 +79,11 @@ public class Ex1 {
         return network;
     }
 
+    /**
+     * Read query from the text file
+     * @param in - Scanner object for reading from the text file
+     * @return Query which created from the content in the text file // "input.txt"
+     */
     private static Query readQuery(Scanner in){
         String str_query;
         str_query = in.nextLine();
@@ -92,6 +102,10 @@ public class Ex1 {
         return new Query(query_variable, evidence_variables, algo);
     }
 
+    /**
+     * Writes the results of the all queries to file // "output.txt"
+     * @param summary - String which represents the results of the all queries
+     */
     private static void saveToFile(String summary) {
         try {
             PrintWriter pw = new PrintWriter("output.txt");
@@ -104,37 +118,27 @@ public class Ex1 {
 
 
     public static void main(String[] args) throws IOException {
-        Scanner in = new Scanner(new FileReader("input2.txt"));
+        Scanner in = new Scanner(new FileReader("input.txt"));
         BayesianNetwork network = createNetwork(in);
-        in.nextLine(); // "Queries"
+        in.nextLine(); // Skip the "Queries" line
         StringBuilder summary = new StringBuilder();
         boolean with_heuristic;
         while(in.hasNextLine()){
             if(summary.length()>0)
                 summary.append("\n");
             Query query = readQuery(in);
-////            System.out.println(new Factor(network.getVariable(query.getQueryVariable().keySet().toString().substring(1,2)), query.getEvidenceVariables()));
-////            System.out.println(new Factor(network.getVariable("A"), query.getEvidenceVariables()));
-//            System.out.println("\n"+new Factor(network.getVariable("B"), query.getEvidenceVariables()));
-//            System.out.println("\n"+new Factor(network.getVariable("E"), query.getEvidenceVariables()));
-//            Factor r = new Factor(network.getVariable("A"), query.getEvidenceVariables());
-//            System.out.println("\n"+r);
-//            System.out.println("\n"+new Factor(network.getVariable("J"), query.getEvidenceVariables()));
-//            System.out.println("\n"+new Factor(network.getVariable("M"), query.getEvidenceVariables()));
-//            if(i==1) {
-//                Factor f = VariableElimination.join(network, new Factor(network.getVariable("J"), query.getEvidenceVariables()), new Factor(network.getVariable("M"), query.getEvidenceVariables()));
-//                System.out.println("***************\n" + VariableElimination.join(network, f, r));
-//            }
             switch (query.getAlgo()) {
-                case 1 -> summary.append(SimpleInference.simpleInference(network, query.getQueryVariable(), query.getEvidenceVariables()));
-                case 2 -> {
+                case 1:
+                    summary.append(SimpleInference.simpleInference(network, query.getQueryVariable(), query.getEvidenceVariables()));
+                    break;
+                case 2 :
                     with_heuristic = false;
                     summary.append(VariableElimination.variableElimination(network, query.getQueryVariable(), query.getEvidenceVariables(), with_heuristic));
-                }
-                case 3 -> {
+                    break;
+                case 3 :
                     with_heuristic = true;
                     summary.append(VariableElimination.variableElimination(network, query.getQueryVariable(), query.getEvidenceVariables(), with_heuristic));
-                }
+                    break;
             }
         }
         // TODO: Delete this line before submission!
