@@ -11,8 +11,14 @@ public class VariableElimination {
             if(!evidence_var_names.contains(parent))
                 return false;
         }
+
+        /* Waiting for answer about that..
+        for (Variable var : network.getVariables()) {
+            if(var.getParents().contains(query_var_name))
+                return false;
+        }
+         */
         return !query_var.getParents().isEmpty();
-//        return evidence_var_names.containsAll(query_var.getParents());
     }
 
     private static double getResultFromCPT(Variable var, HashMap<String, String> query_var, HashMap<String, String> evidence){
@@ -159,8 +165,7 @@ public class VariableElimination {
         return product;
     }
 
-//TODO: Change to private!
-    public static Factor join(BayesianNetwork network, Factor f1, Factor f2){
+    private static Factor join(BayesianNetwork network, Factor f1, Factor f2){
         ArrayList<String> name = new ArrayList<>();
         HashMap<String, Double> table = new HashMap<>();
         ArrayList<String> common_vars = getCommonVariables(f1, f2);
@@ -347,35 +352,115 @@ public class VariableElimination {
         return temp;
     }
 
+    private static int weightCalculation(ArrayList<Variable> neighbors){
+        int weight;
+        if(neighbors.size()>0) {
+            weight = 1;
+            for (Variable var : neighbors) {
+                weight *= var.getValues().size();
+            }
+        }else{
+            weight = 0;
+        }
+        return weight;
+    }
+
     private static ArrayList<String> heuristicOrder(BayesianNetwork network, ArrayList<String> hidden_vars){
         ArrayList<String> ordered = new ArrayList<>();
         HashMap<String, Integer> weights = new HashMap<>();
+        HashMap<String, ArrayList<Variable>> neighbors_lists = new HashMap<>();
         for (String hidden_var : hidden_vars) {
             ArrayList<Variable> neighbors = new ArrayList<>();
-            for (String parent : network.getVariable(hidden_var).getParents())
+            for (String parent : network.getVariable(hidden_var).getParents()) // Adds all the parents of 'hidden_var' to it's neighbors list
                 neighbors.add(network.getVariable(parent));
             for (Variable var : network.getVariables()) {
                 if (var.getParents().contains(hidden_var)){
-                    neighbors.add(var);
+                    neighbors.add(var); // Adds all the variables which 'hidden_var' is their parent to it's neighbors list
                     for (String parent : var.getParents()) {
-                        if(!parent.equals(hidden_var))
+                        if(!parent.equals(hidden_var)) // Adds all variables that are also parents of 'var' to the neighbors list of 'hidden_var'
                             neighbors.add(network.getVariable(parent));
                     }
                 }
             }
-            int weight = 1;
-            for (Variable var : neighbors) {
-                weight *= var.getValues().size();
-            }
-            weights.put(hidden_var, weight);
+//            int weight;
+//            if(neighbors.size()>0) {
+//                weight = 1;
+//                for (Variable var : neighbors) {
+//                    weight *= var.getValues().size();
+//                }
+//            }else{
+//                weight = 0;
+//            }
+            weights.put(hidden_var, weightCalculation(neighbors));
+            neighbors_lists.put(hidden_var, neighbors);
             //TODO: need to remove 'hidden_var' from it's neighbors lists and add edges between any two neighbors of it.
         }
         weights = sortByValue(weights);
-        for (Map.Entry<String, Integer> entry : weights.entrySet()) {
+
+//        while(!hidden_vars.isEmpty()){
+//            Map.Entry<String, Integer> min = a(network, hidden_vars);
+//            ordered.add(min.getKey());
+//            hidden_vars.remove(min.getKey());
+//        }
+
+        Iterator<Map.Entry<String, Integer>> itr = weights.entrySet().iterator();
+        while(itr.hasNext()){
+            Map.Entry<String, Integer> entry = itr.next();
             ordered.add(entry.getKey());
+            for (Variable neighbor1 : neighbors_lists.get(entry.getKey())) {
+                for (Variable neighbor2 : neighbors_lists.get(entry.getKey())) {
+                    if(hidden_vars.contains(neighbor1.getName()) && !neighbor1.equals(neighbor2) && neighbors_lists.get(neighbor1.getName()).contains(neighbor2.getName()))
+                        neighbors_lists.get(neighbor1.getName()).add(neighbor2);
+                }
+            }
+            for (List<Variable> neighbors : neighbors_lists.values()) {
+                if(neighbors.contains(network.getVariable(entry.getKey())))
+                    neighbors.remove(network.getVariable(entry.getKey()));
+            }
+            itr.remove();
+            for (String key : weights.keySet()) {
+                if(!key.equals(entry.getKey())){
+                    weights.put(key, weightCalculation(neighbors_lists.get(key)));
+                }
+            }
+            weights = sortByValue(weights);
         }
         return ordered;
     }
+
+//    private static Map.Entry<String, Integer> a(BayesianNetwork network, ArrayList<String> hidden_vars){
+//        HashMap<String, Integer> weights = new HashMap<>();
+//        HashMap<String, ArrayList<Variable>> neighbors_lists = new HashMap<>();
+//        for (String hidden_var : hidden_vars) {
+//            ArrayList<Variable> neighbors = new ArrayList<>();
+//            for (String parent : network.getVariable(hidden_var).getParents()) // Adds all the parents of 'hidden_var' to it's neighbors list
+//                neighbors.add(network.getVariable(parent));
+//            for (Variable var : network.getVariables()) {
+//                if (var.getParents().contains(hidden_var)){
+//                    neighbors.add(var); // Adds all the variables which 'hidden_var' is their parent to it's neighbors list
+//                    for (String parent : var.getParents()) {
+//                        if(!parent.equals(hidden_var)) // Adds all variables that are also parents of 'var' to the neighbors list of 'hidden_var'
+//                            neighbors.add(network.getVariable(parent));
+//                    }
+//                }
+//            }
+//            int weight;
+//            if(neighbors.size()>0) {
+//                weight = 1;
+//                for (Variable var : neighbors) {
+//                    weight *= var.getValues().size();
+//                }
+//            }else{
+//                weight = 0;
+//            }
+//            weights.put(hidden_var, weight);
+//            neighbors_lists.put(hidden_var, neighbors);
+//            //TODO: need to remove 'hidden_var' from it's neighbors lists and add edges between any two neighbors of it.
+//        }
+//        weights = sortByValue(weights);
+//        Iterator<Map.Entry<String, Integer>> itr = weights.entrySet().iterator();
+//        return itr.next();
+//    }
 
     public static String variableElimination(BayesianNetwork network, HashMap<String, String> query_var, HashMap<String, String> evidence, boolean with_heuristic){
         multi_count = 0;
@@ -427,9 +512,20 @@ public class VariableElimination {
             String key = query_var_name+"="+query_var.get(query_var_name);
             result = df.format(final_factor.getEntry(key));
         }
-        int fraction_length = result.substring(result.indexOf('.')+1).length();
-        if(fraction_length<5){
-            result+="0".repeat(5-fraction_length);
+        if(result.startsWith("1")){
+            result = "1.00000";
+        }else {
+            int fraction_length = result.substring(result.indexOf('.') + 1).length();
+            if (fraction_length < 5) {
+                String padding = "0";
+                for (int i = 1; i < 5 - fraction_length; i++) {
+                    padding += "0";
+                }
+                result += padding;
+            }
+//            if (fraction_length < 5) {
+//                result += "0".repeat(5 - fraction_length);
+//            }
         }
         result += ","+add_count+","+multi_count;
         return result;

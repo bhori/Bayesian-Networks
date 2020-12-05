@@ -17,8 +17,13 @@ public class SimpleInference {
             if(!evidence_var_names.contains(parent))
                 return false;
         }
+        /* Waiting for answer about that..
+        for (Variable var : network.getVariables()) {
+            if(var.getParents().contains(query_var_name))
+                return false;
+        }
+         */
         return !query_var.getParents().isEmpty();
-//        return evidence_var_names.containsAll(query_var.getParents());
     }
 
     /**
@@ -177,9 +182,20 @@ public class SimpleInference {
             add_count--; // because the first addition is "0+...", this is not part of the addition operations of the query calculation
             result = df.format(required_value_prob/sum_of_prob); // "required_value_prob/sum_of_prob" is for the normalization
         }
-        int fraction_length = result.substring(result.indexOf('.')+1).length();
-        if(fraction_length<5){ // if the result of the fraction is shorter than five digits we padding it with zeros
-            result+="0".repeat(5-fraction_length);
+        if(result.startsWith("1")){
+            result = "1.00000";
+        }else {
+            int fraction_length = result.substring(result.indexOf('.') + 1).length();
+            if (fraction_length < 5) {
+                String padding = "0";
+                for (int i = 1; i < 5 - fraction_length; i++) {
+                    padding += "0";
+                }
+                result += padding;
+            }
+//            if (fraction_length < 5) { // if the result of the fraction is shorter than five digits we padding it with zeros
+//                result += "0".repeat(5 - fraction_length);
+//            }
         }
         result += ","+add_count+","+multi_count;
         return result;
