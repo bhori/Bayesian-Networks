@@ -17,12 +17,15 @@ public class SimpleInference {
             if(!evidence_var_names.contains(parent))
                 return false;
         }
-        /* Waiting for answer about that..
-        for (Variable var : network.getVariables()) {
-            if(var.getParents().contains(query_var_name))
-                return false;
-        }
-         */
+
+
+//        // Waiting for answer about that..
+//        for (Variable var : network.getVariables()) {
+//            if(var.getParents().contains(query_var_name))
+//                return false;
+//        }
+
+
         return !query_var.getParents().isEmpty();
     }
 
@@ -45,6 +48,7 @@ public class SimpleInference {
         return var.getCpt().getEntry(parents_key.toString(),self_key);
     }
 
+    // function to get all the combinations of possible values of the hidden variables values (cartesian product), taken from: https://codereview.stackexchange.com/questions/67804/generate-cartesian-product-of-list-in-java
     private static <T> List<List<T>> cartesianProduct(List<T>... lists) {
 
         List<List<T>> product = new ArrayList<List<T>>();
@@ -182,8 +186,11 @@ public class SimpleInference {
             add_count--; // because the first addition is "0+...", this is not part of the addition operations of the query calculation
             result = df.format(required_value_prob/sum_of_prob); // "required_value_prob/sum_of_prob" is for the normalization
         }
-        if(result.startsWith("1")){
+        // TODO: add 'else if' statement for the option that the result is '0'!!!
+        if(result.startsWith("1")) {
             result = "1.00000";
+        }else if(!result.contains(".")){
+            result = "0.00000";
         }else {
             int fraction_length = result.substring(result.indexOf('.') + 1).length();
             if (fraction_length < 5) {

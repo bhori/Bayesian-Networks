@@ -29,12 +29,17 @@ public class Factor {
         if(!evidence.containsKey(var.getName())){
             name.add(var.getName());
             Collections.sort(name);
-            System.out.println(id+"\n"+name.toString());
+//            System.out.println(id+"\n"+name.toString());
             for (String value : var.getValues()) {
                 for (String parents_key : cpt.getCpt().keySet()) {
                     if(!parents_key.contains(parent_evidence))
                         continue;
                     double probability =cpt.getEntry(parents_key, value);
+
+                    // TODO: check this!
+//                    if(probability==0)
+//                        continue;
+
                     parents_key = parents_key.replace(parent_evidence, "");
                     if(parents_key.contains(",,"))
                         parents_key = parents_key.replace(",,",",");
@@ -62,12 +67,17 @@ public class Factor {
             }
         }else{
             Collections.sort(name);
-            System.out.println(id+"\n"+name.toString());
+//            System.out.println(id+"\n"+name.toString());
             String value = evidence.get(var.getName());
             for (String parents_key : cpt.getCpt().keySet()) {
                 if(!parents_key.contains(parent_evidence))
                     continue;
                 double probability = cpt.getEntry(parents_key, value);
+
+                // TODO: check this!
+//                if(probability==0)
+//                    continue;
+
                 parents_key = parents_key.replace(parent_evidence, "");
                 if(parents_key.contains(",,"))
                     parents_key = parents_key.replace(",,",",");
@@ -87,7 +97,7 @@ public class Factor {
                 table.put(key, probability);
             }
         }
-        System.out.println(table);
+//        System.out.println(table);
     }
 
     public Factor(ArrayList<String> name, HashMap<String, Double> table){
@@ -95,7 +105,7 @@ public class Factor {
         this.name = name;
         Collections.sort(name);
         this.table = table;
-        System.out.println(name+"\n"+table);
+//        System.out.println(name+"\n"+table);
     }
 
     public HashMap<String, Double> getTable() {

@@ -5,6 +5,13 @@ public class VariableElimination {
     private static int multi_count;
     private static int add_count;
 
+    /**
+     * Checks if the query can be resolved directly from the CPT of the query variable
+     * @param network - The Bayesian network
+     * @param query_var_name - The query variable name
+     * @param evidence_var_names - Set of the names of evidence variables
+     * @return true if the query can be resolved directly from the CPT of the query variable, Otherwise - return false
+     */
     private static boolean chekIfCPT(BayesianNetwork network, String query_var_name, Set<String> evidence_var_names){
         Variable query_var = network.getVariable(query_var_name);
         for (String parent : query_var.getParents()) {
@@ -12,15 +19,25 @@ public class VariableElimination {
                 return false;
         }
 
-        /* Waiting for answer about that..
-        for (Variable var : network.getVariables()) {
-            if(var.getParents().contains(query_var_name))
-                return false;
-        }
-         */
+
+//        // Waiting for answer about that..
+//        for (Variable var : network.getVariables()) {
+//            if(var.getParents().contains(query_var_name))
+//                return false;
+//        }
+
+
+
         return !query_var.getParents().isEmpty();
     }
 
+    /**
+     * Resolves the query directly from the CPT of the query variable
+     * @param var - The query variable
+     * @param query_var - The name of the query variable and it's requested value // <name, requested value>
+     * @param evidence - A collection of names and values of all given variables (evidence) // <name, given value>
+     * @return the probability that requested value of the query variable will happen given that given values of the evidence variables happened
+     */
     private static double getResultFromCPT(Variable var, HashMap<String, String> query_var, HashMap<String, String> evidence){
         StringBuilder parents_key = new StringBuilder();
         for (String parent : var.getParents()) {
@@ -133,6 +150,7 @@ public class VariableElimination {
         return different_vars;
     }
 
+    // function to get all the combinations of possible values of the hidden variables values (cartesian product), taken from: https://codereview.stackexchange.com/questions/67804/generate-cartesian-product-of-list-in-java
     private static <T> List<List<T>> cartesianProduct(List<T>... lists) {
 
         List<List<T>> product = new ArrayList<List<T>>();
@@ -223,7 +241,6 @@ public class VariableElimination {
                 multi_count++;
                 //Maybe this is redundant..
                 key_list.removeAll(common_vars_combination);
-
             }
         }
         return new Factor(name, table);
@@ -284,7 +301,6 @@ public class VariableElimination {
             add_count--;
             table.put(new_key, value);
         }
-
         ArrayList<String> name = f.getName();
         name.remove(hidden_var_name);
         return new Factor(name, table);
@@ -306,29 +322,74 @@ public class VariableElimination {
         return new Factor(f.getName(), table);
     }
 
-    private static ArrayList<Factor> multiply_order(BayesianNetwork network, ArrayList<Factor> hidden_var_factors){
-//        ArrayList<ArrayList<Factor>> matrix = new ArrayList<>();
-        int[][] matrix = new int[hidden_var_factors.size()][hidden_var_factors.size()];
-        for (int i = 0; i < matrix.length; i++) {
-            for (int j = 0; j < matrix[0].length; j++) {
-                if(i!=j){
+    /**
+     * Computes and returns which two factors from the hidden variable factors list are most profitable to multiply
+     * @param network - The Bayesian network
+     * @param hidden_var_factors - List of factors whose name contains the hidden variable name
+     * @return which two factors from the hidden variable factors list are most profitable to multiply
+     */
+    private static String multiply_order(BayesianNetwork network, ArrayList<Factor> hidden_var_factors){
+        ArrayList<ArrayList<Integer>> matrix = new ArrayList<>();
+        for (int i = 0; i < hidden_var_factors.size(); i++) {
+            //TODO: maybe i need to start with 'j=i+1', if so, need to delete the 'if' statement in line 319...
+            ArrayList<Integer> row = new ArrayList<>();
+            for (int j = 0; j < hidden_var_factors.size(); j++) {
+                if(i==j){
+                    row.add(Integer.MAX_VALUE); // Multiplying a factor by itself is not an option
+                }else{
                     Factor f1 = hidden_var_factors.get(i);
                     Factor f2 = hidden_var_factors.get(j);
                     Set<String> name = new HashSet<>(f1.getName());
-//                    ArrayList<String> name = f1.getName();
                     name.addAll(f2.getName());
                     int values_product = 1;
                     for (String var_name : name) {
                         values_product*=network.getVariable(var_name).getValues().size();
                     }
-                    matrix[i][j]=values_product-Math.max(f1.getTable().size(), f2.getTable().size());
+                    row.add(values_product-Math.max(f1.getTable().size(), f2.getTable().size()));
+                }
+            }
+            matrix.add(i, row);
+        }
+        ArrayList<Integer> minimum_values = new ArrayList<>();
+        for (ArrayList<Integer> arr : matrix) { // Takes the minimum value in each row in the matrix
+            minimum_values.add(Collections.min(arr));
+        }
+        int minimum_value = Collections.min(minimum_values); // finds the minimum value in the 'minimum_values' list
+        ArrayList<String> name = new ArrayList<>();
+        HashMap<ArrayList<String>, Integer> ascii_values = new HashMap<>(); // Holds the ascii value of all new factors names obtained after multiplication whose value is equal to the 'minimum_value'
+        HashMap<ArrayList<String>, String> minimum = new HashMap<>(); // Holds all factor pairs whose multiplication is equal to the 'minimum_value'
+        for (int i = 0; i < hidden_var_factors.size(); i++) {
+            for (int j = 0; j < hidden_var_factors.size(); j++) {
+                if(matrix.get(i).get(j)==minimum_value){
+                    Factor f1 = hidden_var_factors.get(i);
+                    Factor f2 = hidden_var_factors.get(j);
+                    Set<String> name_set = new HashSet<>(f1.getName());
+                    name_set.addAll(f2.getName());
+                    name = new ArrayList<>(name_set);
+                    Collections.sort(name);
+                    int ascii_value=0;
+                    for (String var : name) {
+                        for (int k = 0; k<var.length(); k++) {
+                            ascii_value+=var.charAt(k);
+                        }
+                    }
+                    ascii_values.put(name, ascii_value);
+                    minimum.put(name, i+","+j);
                 }
             }
         }
-        return null;
+        int min_ascii_value = Integer.MAX_VALUE;
+        ArrayList<String> key_name = new ArrayList<>();
+        for (ArrayList<String> var_name : ascii_values.keySet()) { // Finds the name of the new factor with the minimum ascii value out of all those whose value is equal to the 'minimum_value'
+            if(ascii_values.get(var_name)<min_ascii_value){
+                min_ascii_value = ascii_values.get(var_name);
+                key_name = var_name;
+            }
+        }
+        return minimum.get(key_name); // Returns a string that represents the two factors that need to be selected (from 'hidden_var_factors' list) to get the desired factor
     }
 
-    // function to sort hashmap by values
+    // function to sort hashmap by values, taken from GeeksforGeeks: https://www.geeksforgeeks.org/sorting-a-hashmap-according-to-values/
     private static HashMap<String, Integer> sortByValue(HashMap<String, Integer> hm)
     {
         // Create a list from elements of HashMap
@@ -352,6 +413,11 @@ public class VariableElimination {
         return temp;
     }
 
+    /**
+     * Computes and returns the weight of the variable which 'neighbors' list belongs to
+     * @param neighbors - The neighbors list
+     * @return the weight of the variable which 'neighbors' list belongs to
+     */
     private static int weightCalculation(ArrayList<Variable> neighbors){
         int weight;
         if(neighbors.size()>0) {
@@ -365,10 +431,17 @@ public class VariableElimination {
         return weight;
     }
 
+    /**
+     * Sorts the hidden variables list according to heuristic function, uses the 'min-weight' heuristic function
+     * @param network - The Bayesian network
+     * @param hidden_vars - List of all hidden variables names
+     * @return sorted list of the hidden variables names according to the heuristic function
+     */
     private static ArrayList<String> heuristicOrder(BayesianNetwork network, ArrayList<String> hidden_vars){
-        ArrayList<String> ordered = new ArrayList<>();
+        ArrayList<String> sorted = new ArrayList<>();
         HashMap<String, Integer> weights = new HashMap<>();
         HashMap<String, ArrayList<Variable>> neighbors_lists = new HashMap<>();
+        // Builds the initial neighbors lists of the hidden variables and their weights
         for (String hidden_var : hidden_vars) {
             ArrayList<Variable> neighbors = new ArrayList<>();
             for (String parent : network.getVariable(hidden_var).getParents()) // Adds all the parents of 'hidden_var' to it's neighbors list
@@ -382,85 +455,38 @@ public class VariableElimination {
                     }
                 }
             }
-//            int weight;
-//            if(neighbors.size()>0) {
-//                weight = 1;
-//                for (Variable var : neighbors) {
-//                    weight *= var.getValues().size();
-//                }
-//            }else{
-//                weight = 0;
-//            }
             weights.put(hidden_var, weightCalculation(neighbors));
             neighbors_lists.put(hidden_var, neighbors);
-            //TODO: need to remove 'hidden_var' from it's neighbors lists and add edges between any two neighbors of it.
         }
         weights = sortByValue(weights);
-
-//        while(!hidden_vars.isEmpty()){
-//            Map.Entry<String, Integer> min = a(network, hidden_vars);
-//            ordered.add(min.getKey());
-//            hidden_vars.remove(min.getKey());
-//        }
 
         Iterator<Map.Entry<String, Integer>> itr = weights.entrySet().iterator();
         while(itr.hasNext()){
             Map.Entry<String, Integer> entry = itr.next();
-            ordered.add(entry.getKey());
-            for (Variable neighbor1 : neighbors_lists.get(entry.getKey())) {
+            sorted.add(entry.getKey()); // Inserts the minimum-weighted hidden variable to the sorted list
+            for (Variable neighbor1 : neighbors_lists.get(entry.getKey())) { // Updates all the neighbor's lists of the hidden variables neighbors of the chosen variable
+                //TODO: Check if this 'if' statement is good!! If so, delete the first condition in line 418!
+                if(!hidden_vars.contains(neighbor1.getName()))
+                    continue;
                 for (Variable neighbor2 : neighbors_lists.get(entry.getKey())) {
                     if(hidden_vars.contains(neighbor1.getName()) && !neighbor1.equals(neighbor2) && neighbors_lists.get(neighbor1.getName()).contains(neighbor2.getName()))
-                        neighbors_lists.get(neighbor1.getName()).add(neighbor2);
+                        neighbors_lists.get(neighbor1.getName()).add(neighbor2); // Adds each variable of the neighbors list of the chosen variable to it's hidden variables neighbors lists
                 }
             }
-            for (List<Variable> neighbors : neighbors_lists.values()) {
+            for (List<Variable> neighbors : neighbors_lists.values()) { // Deletes the chosen variable from all it's hidden variables' neighbors lists
                 if(neighbors.contains(network.getVariable(entry.getKey())))
                     neighbors.remove(network.getVariable(entry.getKey()));
             }
-            itr.remove();
-            for (String key : weights.keySet()) {
+            itr.remove(); // Delete the chosen variable entry from the 'weights' map
+            for (String key : weights.keySet()) {  // Updates the weights on the map after rebuilding the lists of neighbors
                 if(!key.equals(entry.getKey())){
                     weights.put(key, weightCalculation(neighbors_lists.get(key)));
                 }
             }
             weights = sortByValue(weights);
         }
-        return ordered;
+        return sorted;
     }
-
-//    private static Map.Entry<String, Integer> a(BayesianNetwork network, ArrayList<String> hidden_vars){
-//        HashMap<String, Integer> weights = new HashMap<>();
-//        HashMap<String, ArrayList<Variable>> neighbors_lists = new HashMap<>();
-//        for (String hidden_var : hidden_vars) {
-//            ArrayList<Variable> neighbors = new ArrayList<>();
-//            for (String parent : network.getVariable(hidden_var).getParents()) // Adds all the parents of 'hidden_var' to it's neighbors list
-//                neighbors.add(network.getVariable(parent));
-//            for (Variable var : network.getVariables()) {
-//                if (var.getParents().contains(hidden_var)){
-//                    neighbors.add(var); // Adds all the variables which 'hidden_var' is their parent to it's neighbors list
-//                    for (String parent : var.getParents()) {
-//                        if(!parent.equals(hidden_var)) // Adds all variables that are also parents of 'var' to the neighbors list of 'hidden_var'
-//                            neighbors.add(network.getVariable(parent));
-//                    }
-//                }
-//            }
-//            int weight;
-//            if(neighbors.size()>0) {
-//                weight = 1;
-//                for (Variable var : neighbors) {
-//                    weight *= var.getValues().size();
-//                }
-//            }else{
-//                weight = 0;
-//            }
-//            weights.put(hidden_var, weight);
-//            neighbors_lists.put(hidden_var, neighbors);
-//            //TODO: need to remove 'hidden_var' from it's neighbors lists and add edges between any two neighbors of it.
-//        }
-//        weights = sortByValue(weights);
-//        Iterator<Map.Entry<String, Integer>> itr = weights.entrySet().iterator();
-//        return itr.next();
-//    }
 
     public static String variableElimination(BayesianNetwork network, HashMap<String, String> query_var, HashMap<String, String> evidence, boolean with_heuristic){
         multi_count = 0;
@@ -489,6 +515,23 @@ public class VariableElimination {
                 if(!check_relation(network, query_var, evidence, network.getVariable(hidden_var_name)))
                     continue;
                 ArrayList<Factor> hidden_var_factors = hiddenVarFactors(factors, hidden_var_name);
+
+                while(hidden_var_factors.size()>1){
+                    String chosen_factors = multiply_order(network, hidden_var_factors);
+                    Factor f1 = hidden_var_factors.get(Integer.parseInt(chosen_factors.substring(0, chosen_factors.indexOf(','))));
+                    Factor f2 = hidden_var_factors.get(Integer.parseInt(chosen_factors.substring(chosen_factors.indexOf(',')+1)));
+                    Factor multi_factor = join(network, f1, f2);
+                    factors.remove(f1);
+                    factors.remove(f2);
+                    hidden_var_factors.remove(f1);
+                    hidden_var_factors.remove(f2);
+                    hidden_var_factors.add(multi_factor);
+                }
+                Factor eliminate_factor = eliminate(network, hidden_var_factors.get(0), hidden_var_name);
+                factors.add(eliminate_factor);
+
+
+                /*
                 //TODO: What if there is no elements in the ArrayList? Can this happen at all??
                 Factor multi_factor = hidden_var_factors.get(0);
 //                Factor multi_factor = hidden_var_factors.get(hidden_var_factors.size()-1);
@@ -503,6 +546,9 @@ public class VariableElimination {
 //                }
                 Factor eliminate_factor = eliminate(network, multi_factor, hidden_var_name);
                 factors.add(eliminate_factor);
+                 */
+
+
             }
             Factor final_factor = factors.get(0);
             for (int i = 1; i < factors.size(); i++) {
@@ -514,6 +560,8 @@ public class VariableElimination {
         }
         if(result.startsWith("1")){
             result = "1.00000";
+        }else if(!result.contains(".")){
+            result = "0.00000";
         }else {
             int fraction_length = result.substring(result.indexOf('.') + 1).length();
             if (fraction_length < 5) {
@@ -523,9 +571,6 @@ public class VariableElimination {
                 }
                 result += padding;
             }
-//            if (fraction_length < 5) {
-//                result += "0".repeat(5 - fraction_length);
-//            }
         }
         result += ","+add_count+","+multi_count;
         return result;
