@@ -464,14 +464,16 @@ public class VariableElimination {
     /**
      * Computes and returns the weight of the variable which 'neighbors' list belongs to.
      * @param neighbors - The neighbors list
+     * @param evidence - hashmap of the evidence variables and their values
      * @return the weight of the variable which 'neighbors' list belongs to
      */
-    private static int weightCalculation(ArrayList<Variable> neighbors) {
+    private static int weightCalculation(ArrayList<Variable> neighbors, HashMap<String, String> evidence) {
         int weight;
         if (neighbors.size() > 0) {
             weight = 1;
             for (Variable var : neighbors) {
-                weight *= var.getValues().size();
+                if(!evidence.containsKey(var.getName())) // if a neighbor is evidence variable, ignore it (because its domain is 1).
+                    weight *= var.getValues().size();
             }
         } else {
             weight = 0;
@@ -481,11 +483,12 @@ public class VariableElimination {
 
     /**
      * Sorts the hidden variables list according to heuristic function, uses the 'min-weight' heuristic function
-     * @param network     - The Bayesian network
+     * @param network - The Bayesian network
      * @param hidden_vars - List of all hidden variables names
+     * @param evidence - hashmap of the evidence variables and their values
      * @return sorted list of the hidden variables names according to the heuristic function
      */
-    private static ArrayList<String> heuristicOrder(BayesianNetwork network, ArrayList<String> hidden_vars) {
+    private static ArrayList<String> heuristicOrder(BayesianNetwork network, ArrayList<String> hidden_vars, HashMap<String, String> evidence) {
         ArrayList<String> sorted = new ArrayList<>();
         HashMap<String, Integer> weights = new HashMap<>();
         HashMap<String, ArrayList<Variable>> neighbors_lists = new HashMap<>();
@@ -503,7 +506,7 @@ public class VariableElimination {
                     }
                 }
             }
-            weights.put(hidden_var, weightCalculation(neighbors));
+            weights.put(hidden_var, weightCalculation(neighbors, evidence));
             neighbors_lists.put(hidden_var, neighbors);
         }
         weights = sortByValue(weights);
@@ -527,7 +530,7 @@ public class VariableElimination {
             itr.remove(); // Delete the chosen variable entry from the 'weights' map
             for (String key : weights.keySet()) {  // Updates the weights on the map after rebuilding the lists of neighbors
                 if (!key.equals(entry.getKey())) {
-                    weights.put(key, weightCalculation(neighbors_lists.get(key)));
+                    weights.put(key, weightCalculation(neighbors_lists.get(key), evidence));
                 }
             }
             weights = sortByValue(weights);
@@ -559,7 +562,7 @@ public class VariableElimination {
                 }
             }
             if (with_heuristic) { // for algorithm 3
-                hidden_vars = heuristicOrder(network, hidden_vars);
+                hidden_vars = heuristicOrder(network, hidden_vars, evidence);
             } else { // for algorithm 2
                 Collections.sort(hidden_vars);
             }
@@ -583,9 +586,6 @@ public class VariableElimination {
                 Factor eliminate_factor = eliminate(network, hidden_var_factors.get(0), hidden_var_name);
                 if (eliminate_factor.getTable().size() > 1) {
                     factors.add(eliminate_factor);
-                } else {
-                    //TODO: not sure about this, according to the new instructions it seems that we need to count this addition...
-                    add_count--;
                 }
             }
             Factor final_factor = factors.get(0);

@@ -135,8 +135,6 @@ public class Ex1 {
                     break;
             }
         }
-        // TODO: Delete this line before submission!
-        System.out.println(summary);
         saveToFile(summary.toString());
     }
 }

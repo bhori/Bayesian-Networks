@@ -37,8 +37,7 @@ public class Factor {
                     for (String parent : parent_evidence_list) { // remove the evidence from the table (from the key)
                         parents_key = parents_key.replace(parent, ""); // remove the evidence from the table (from the key)
                     }
-                    //TODO: fix the line numbers in the comment below...
-                    if(parents_key.contains(",,")) // Small key fixes (lines 40-46)
+                    if(parents_key.contains(",,")) // Small key fixes (lines 40-45)
                         parents_key = parents_key.replace(",,",",");
                     if(parents_key.startsWith(","))
                         parents_key = parents_key.substring(1);
@@ -46,8 +45,7 @@ public class Factor {
                         parents_key = parents_key.substring(0, parents_key.length()-1);
                     String key = "";
                     int var_index = name.indexOf(var.getName());
-                    //TODO: fix the line numbers in the comment below...
-                    if((var_index==name.size()-1) && (var_index==0)){ //Inserts the value of 'var' to the key in the right place and creates the key for the new table (lines 59-70)
+                    if((var_index==name.size()-1) && (var_index==0)){ //Inserts the value of 'var' to the key in the right place and creates the key for the new table (lines 48-59)
                         key = var.getName()+"="+value;
                     }else if(var_index==name.size()-1){
                         key = parents_key+","+var.getName()+"="+value;
@@ -77,16 +75,14 @@ public class Factor {
                 for (String parent : parent_evidence_list) { // remove the evidence from the table (from the key)
                     parents_key = parents_key.replace(parent, ""); // remove the evidence from the table (from the key)
                 }
-                //TODO: fix the line numbers in the comment below...
-                if(parents_key.contains(",,")) // Small key fixes (lines 43-49)
+                if(parents_key.contains(",,")) // Small key fixes (lines 78-83)
                     parents_key = parents_key.replace(",,",",");
                 if(parents_key.startsWith(","))
                     parents_key = parents_key.substring(1);
                 if(parents_key.endsWith(","))
                     parents_key = parents_key.substring(0, parents_key.length()-1);
                 String key = "";
-                //TODO: fix the line numbers in the comment below...
-                if(parents_key.contains(",")){ // Creates the key for the new table (lines 99-105)
+                if(parents_key.contains(",")){ // Creates the key for the new table (lines 85-91)
                     ArrayList<String> s =  new ArrayList<>(Arrays.asList(parents_key.split(",")));
                     Collections.sort(s);
                     key = String.join(",",  s.toArray(new String[s.size()]));
