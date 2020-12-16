@@ -2,7 +2,7 @@ import java.text.DecimalFormat;
 import java.util.*;
 
 public class SimpleInference {
-    private static int multi_count;
+    private static int multi_count; // Counts the number of multiplication operations
 
     /**
      * Checks if the query can be resolved directly from the CPT of the query variable
@@ -13,19 +13,12 @@ public class SimpleInference {
      */
     private static boolean chekIfCPT(BayesianNetwork network, String query_var_name, Set<String> evidence_var_names){
         Variable query_var = network.getVariable(query_var_name);
+        if(query_var.getParents().size()!=evidence_var_names.size())
+            return false;
         for (String parent : query_var.getParents()) {
             if(!evidence_var_names.contains(parent))
                 return false;
         }
-
-
-//        // Waiting for answer about that..
-//        for (Variable var : network.getVariables()) {
-//            if(var.getParents().contains(query_var_name))
-//                return false;
-//        }
-
-
         return !query_var.getParents().isEmpty();
     }
 
@@ -41,10 +34,8 @@ public class SimpleInference {
         for (String parent : var.getParents()) {
             parents_key.append(parent).append("=").append(evidence.get(parent)).append(",");
         }
-//        if(var.getParents().size()>0)
-        parents_key = new StringBuilder(parents_key.substring(0, parents_key.length() - 1));
+        parents_key = new StringBuilder(parents_key.substring(0, parents_key.length() - 1)); // remove the last "," form "parents_key"
         String self_key = query_var.get(var.getName());
-//        return var.getCpt().get(parents_key.toString()).get(self_key);
         return var.getCpt().getEntry(parents_key.toString(),self_key);
     }
 
@@ -93,35 +84,42 @@ public class SimpleInference {
     }
 
     /**
-     *
-     * @param var
-     * @param combination
-     * @return
+     * Returns the probability that a value of variable will happen given that it's parents happened
+     * @param var - the variable which has been examined
+     * @param combination - hashmap of all the variables in the network and their specific values requested
+     * @return the probability that a value of 'var' will happen given that it's parents happened
      */
     private static double getVarProb(Variable var, HashMap<String, String> combination){
         StringBuilder parents_key = new StringBuilder();
         for (String parent : var.getParents()) {
             parents_key.append(parent).append("=").append(combination.get(parent)).append(",");
         }
-        if ((parents_key.length() > 0) && (parents_key.charAt(parents_key.length() - 1) == ','))
+        if ((parents_key.length() > 0) && (parents_key.charAt(parents_key.length() - 1) == ',')) // remove the last "," form "parents_key" if it exists
             parents_key = new StringBuilder(parents_key.substring(0, parents_key.length() - 1));
         String self_key = "";
         self_key = combination.get(var.getName());
-//        return var.getCpt().get(parents_key.toString()).get(self_key);
         return var.getCpt().getEntry(parents_key.toString(),self_key);
     }
 
+    /**
+     * Returns the probability for specific combination of the values of all the variables in the network (in case that there is hidden variables in the query)
+     * @param query_var_name - the query variable name
+     * @param query_var_value - the query variable value
+     * @param network - the bayesian network
+     * @param combination - the combination of the values of the hidden variables
+     * @param evidence - hashmap of the evidence variables and their values
+     * @param hidden - List of the hidden variables
+     * @return the probability for specific combination of the values of all the variables in the network
+     */
     private static double getLocalProb(String query_var_name, String query_var_value, BayesianNetwork network, List<String> combination, HashMap<String, String> evidence, ArrayList<Variable> hidden){
         double local_prob = 1;
         HashMap<String, String> current_values;
         current_values = (HashMap<String, String>) evidence.clone();
         current_values.put(query_var_name, query_var_value);
         for (int i = 0; i < combination.size(); i++) {
-//                        hidden_comb.put(hidden.get(i).getName(), combination.get(i));
             current_values.put(hidden.get(i).getName(), combination.get(i));
         }
         for (Variable v : network.getVariables()) {
-            //TODO: Ignore cases in which the probability is zero!
             local_prob *= getVarProb(v, current_values);
             multi_count++;
         }
@@ -130,6 +128,14 @@ public class SimpleInference {
         return local_prob;
     }
 
+    /**
+     * Returns the probability for specific combination of the values of all the variables in the network (in case that there is no hidden variables in the query)
+     * @param query_var_name - the query variable name
+     * @param query_var_value - the query variable value
+     * @param network - the bayesian network
+     * @param evidence - hashmap of the evidence variables and their values
+     * @return the probability for specific combination of the values of all the variables in the network
+     */
     private static double getLocalProb(String query_var_name, String query_var_value, BayesianNetwork network, HashMap<String, String> evidence){
         double local_prob = 1;
         HashMap<String, String> current_values;
@@ -144,9 +150,15 @@ public class SimpleInference {
         return local_prob;
     }
 
-
+    /**
+     * Solves the query (using Simple Inference algorithm) and returns the result with the number of addition operations and multiplication operations used in the calculation
+     * @param network - the bayesian network
+     * @param query_var - the query variable name and it's requested value
+     * @param evidence - hashmap of the evidence variables and their values
+     * @return the result of the query with the number of addition operations and multiplication operations used in the calculation
+     */
     public static String simpleInference(BayesianNetwork network, HashMap<String, String> query_var, HashMap<String, String> evidence){
-        double sum_of_prob = 0; // sum of probabilities of the all values of the query variable given values of the evidence variable, used for for the normalization
+        double sum_of_prob = 0; // sum of probabilities of the all values of the query variable given values of the evidence variable, used for the normalization
         double required_value_prob = 0;
         multi_count=0; // Counter for multiplication operation
         int add_count = 0; // Counter for the addition operation
@@ -186,23 +198,19 @@ public class SimpleInference {
             add_count--; // because the first addition is "0+...", this is not part of the addition operations of the query calculation
             result = df.format(required_value_prob/sum_of_prob); // "required_value_prob/sum_of_prob" is for the normalization
         }
-        // TODO: add 'else if' statement for the option that the result is '0'!!!
         if(result.startsWith("1")) {
             result = "1.00000";
         }else if(!result.contains(".")){
             result = "0.00000";
         }else {
             int fraction_length = result.substring(result.indexOf('.') + 1).length();
-            if (fraction_length < 5) {
+            if (fraction_length < 5) { // If the number of digits after the decimal point is less than five, padding with zeros
                 String padding = "0";
                 for (int i = 1; i < 5 - fraction_length; i++) {
                     padding += "0";
                 }
                 result += padding;
             }
-//            if (fraction_length < 5) { // if the result of the fraction is shorter than five digits we padding it with zeros
-//                result += "0".repeat(5 - fraction_length);
-//            }
         }
         result += ","+add_count+","+multi_count;
         return result;

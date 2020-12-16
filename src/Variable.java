@@ -8,8 +8,14 @@ public class Variable {
     private CPT cpt;
 
 
+    /**
+     * Constructs Variable
+     * @param name - The name of the variable
+     * @param values - List of all the possible values of the variable
+     * @param parents - List of all the parents of the variable
+     */
     public Variable(String name, ArrayList<String> values, ArrayList<String> parents){
-        this.name = name; // Need to change this assignment?
+        this.name = name;
         this.values = new ArrayList<>();
         this.values.addAll(values);
         this.parents = new ArrayList<>();
@@ -50,10 +56,6 @@ public class Variable {
     public String getName() {
         return name;
     }
-
-//    public String toString(){
-//        return name+"\n"+values+"\n"+parents+"\n";
-//    }
 
     /**
      * Returns a list of all parents of this variable

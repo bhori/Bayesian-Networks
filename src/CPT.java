@@ -3,6 +3,9 @@ import java.util.HashMap;
 public class CPT {
     private HashMap<String, HashMap<String, Double>> cpt; // The table which represents the conditional probability
 
+    /**
+     * Constructs empty CPT
+     */
     public CPT(){
         cpt = new HashMap<>();
     }

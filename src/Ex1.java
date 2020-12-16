@@ -35,7 +35,6 @@ public class Ex1 {
             String entries = "";
             String entry = "";
             double probability = 0;
-            // TODO: if there is no parents then the '=' is the first character! I need to take care of that!!
             while((entries = in.nextLine()).contains("=")){
                 double complementary = 1; // For the last value that is not represented in the file
                 String parent_key = "";
@@ -46,15 +45,10 @@ public class Ex1 {
                     for (int j = 0; j < parent_arr.length; j++) {
                         parent_arr[j] = parents.get(j) + "=" + parent_arr[j];
                     }
-
-
                     ArrayList<String> s = new ArrayList<>(Arrays.asList(parent_arr));
                     Collections.sort(s);
                     parent_key = String.join(",", s.toArray(new String[s.size()]));
                     Collections.sort(variable.getParents());
-
-
-//                    parent_key = String.join(",", parent_arr);
                 }
                 while(entries.contains("=")){
                     entries = entries.substring(entries.indexOf('=')+1);
@@ -119,7 +113,7 @@ public class Ex1 {
 
     public static void main(String[] args) throws IOException {
         Scanner in = new Scanner(new FileReader("input.txt"));
-        BayesianNetwork network = createNetwork(in);
+        BayesianNetwork network = createNetwork(in); // Create the bayesian network
         in.nextLine(); // Skip the "Queries" line
         StringBuilder summary = new StringBuilder();
         boolean with_heuristic;

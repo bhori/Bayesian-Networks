@@ -5,6 +5,9 @@ public class BayesianNetwork {
     private  ArrayList<Variable> variables; // List of all the variables in this network
     private HashMap<String, Variable> network;
 
+    /**
+     * Constructs empty Bayesian Network
+     */
     public BayesianNetwork() {
         network = new HashMap<>();
         variables = new ArrayList<>();

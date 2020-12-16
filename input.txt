@@ -42,3 +42,4 @@ P(B=true|J=true,M=true),2
 P(B=true|J=true,M=true),3
 P(J=true|B=true),1
 P(J=true|B=true),2
+P(A=true|B=true,E=true,M=true),2

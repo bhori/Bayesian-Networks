@@ -1,0 +1,85 @@
+Network
+Variables: A,B,C,D,E,F,G,H,I
+
+Var A
+Values: true,false
+Parents: none
+CPT:
+=true,0.1
+
+Var B
+Values: true,false
+Parents: A
+CPT:
+true,=true,0.2
+false,=true,0.4
+
+Var C
+Values: true,false
+Parents: A
+CPT:
+true,=true,0.25
+false,=true,0.45
+
+Var D
+Values: true,false
+Parents: A
+CPT:
+true,=true,0.22
+false,=true,0.42
+
+Var E
+Values: one,two
+Parents: B
+CPT:
+true,=one,0.12
+false,=one,0.32
+
+Var F
+Values: one,two,three
+Parents: B,C,D
+CPT:
+true,true,true,=one,0.3,=two,0.4
+true,true,false,=one,0.4,=two,0.42
+true,false,true,=one,0.29,=two,0.43
+true,false,false,=one,0.1,=two,0.1
+false,true,true,=one,0.5,=two,0.13
+false,true,false,=one,0.14,=two,0.34
+false,false,true,=one,0.9,=two,0.05
+false,false,false,=one,0.08,=two,0.7
+
+Var G
+Values: one,two
+Parents: D
+CPT:
+true,=one,0.52
+false,=one,0.73
+
+Var H
+Values: yes,no
+Parents: E
+CPT:
+one,=yes,0.22
+two,=yes,0.63
+
+Var I
+Values: yes,no,maybe,ulai
+Parents: F,G
+CPT:
+one,one,=yes,0.3,=no,0.4,=maybe,0.2
+one,two,=yes,0.13,=no,0.14,=maybe,0.14
+two,one,=yes,0.23,=no,0.24,=maybe,0.1
+two,two,=yes,0.5,=no,0.4,=maybe,0.01
+three,one,=yes,0.42,=no,0.31,=maybe,0.05
+three,two,=yes,0.09,=no,0.2,=maybe,0.5
+
+Queries
+P(I=no|H=yes),1
+P(I=no|H=yes),2
+P(I=no|H=yes),3
+P(I=no|H=yes,G=one),1
+P(I=no|H=yes,G=one),2
+P(I=no|H=yes,G=one),3
+P(H=yes|I=no,G=one),1
+P(H=yes|I=no,G=one),2
+P(H=yes|I=no,G=one),3

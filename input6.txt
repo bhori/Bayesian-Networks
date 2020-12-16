@@ -1,0 +1,49 @@
+Network
+Variables: BU,RL,ES,NFF,DEF
+
+Var BU
+Values: true,false
+Parents: none
+CPT:
+=true,0.2
+
+Var RL
+Values: true,false
+Parents: none
+CPT:
+=true,0.1
+
+Var ES
+Values: true,false
+Parents: BU,RL
+CPT:
+true,true,=true,1
+true,false,=true,0.4
+false,true,=true,0.6
+false,false,=true,0.05
+
+Var NFF
+Values: true,false
+Parents: none
+CPT:
+=true,0.5
+
+Var DEF
+Values: true,false
+Parents: ES,NFF
+CPT:
+true,true,=true,1
+true,false,=true,0.75
+false,true,=true,0.8
+false,false,=true,0.1
+
+Queries
+P(DEF=true|ES=true,NFF=true),1
+P(DEF=true|ES=true,NFF=true),2
+P(DEF=true|ES=true,NFF=true),3
+P(DEF=true|NFF=true),1
+P(DEF=true|NFF=true),2
+P(DEF=true|NFF=true),3
+P(DEF=true|NFF=true,BU=true,RL=true),1
+P(DEF=true|NFF=true,BU=true,RL=true),2
+P(DEF=true|NFF=true,BU=true,RL=true),3
