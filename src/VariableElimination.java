@@ -395,7 +395,7 @@ public class VariableElimination {
                     for (String var_name : name) {
                         values_product *= network.getVariable(var_name).getValues().size();
                     }
-                    row.add(values_product - Math.max(f1.getTable().size(), f2.getTable().size()));
+                    row.add(values_product);
                 }
             }
             matrix.add(i, row);
@@ -418,7 +418,7 @@ public class VariableElimination {
                     name = new ArrayList<>(name_set);
                     Collections.sort(name);
                     int ascii_value = 0;
-                    for (String var : name) {
+                    for (String var : name) { // Computes the ascii value of the new factor name obtained after multiplication of 'f1' and 'f2'
                         for (int k = 0; k < var.length(); k++) {
                             ascii_value += var.charAt(k);
                         }

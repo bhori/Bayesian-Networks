@@ -1,63 +1,49 @@
 Network
-Variables: U,V,W,A,X,Y,Z
+Variables: D,I,G,L,S
 
-Var U
+Var D
 Values: true,false
 Parents: none
 CPT:
 =true,0.4
 
-Var V
+Var I
 Values: true,false
 Parents: none
 CPT:
 =true,0.3
 
-Var W
-Values: true,false
-Parents: none
+Var G
+Values: small,medium,large
+Parents: D,I
 CPT:
-=true,0.05
+true,true,=small,0.5,=medium,0.3
+true,false,=small,0.9,=medium,0.08
+false,true,=small,0.05,=medium,0.25
+false,false,=small,0.3,=medium,0.4
 
-Var A
+Var L
 Values: true,false
-Parents: none
+Parents: G
 CPT:
-=true,0.05
+small,=true,0.9
+medium,=true,0.6
+large,=true,0.01
 
-Var X
+Var S
 Values: true,false
-Parents: U,V
+Parents: I
 CPT:
-true,true,=true,0.1
-true,false,=true,0.94
-false,true,=true,0.29
-false,false,=true,0.001
-
-Var Y
-Values: true,false
-Parents: V,W,A
-CPT:
-true,true,true,=true,0.52
-true,true,false,=true,0.4
-true,false,true,=true,0.4
-true,false,false,=true,0.4
-false,true,true,=true,0.29
-false,true,false,=true,0.02
-false,false,true,=true,0.4
-false,false,false,=true,0.4
-
-Var Z
-Values: true,false
-Parents: X,Y
-CPT:
-true,true,=true,0.3
-true,false,=true,0.4
-false,true,=true,0.5
-false,false,=true,0.6
+true,=true,0.8
+false,=true,0.05
 
 Queries
-P(Y=true|W=true,Z=true,A=true),1
-P(Y=true|W=true,Z=true,A=true),2
-P(Y=true|W=true,Z=true,A=true),3
-P(U=true|Z=true),3
+P(L=true|I=true,D=true),1
+P(L=true|I=true,D=true),2
+P(L=true|I=true,D=true),3
+P(L=true|D=true),1
+P(L=true|D=true),2
+P(L=true|D=true),3
+P(G=medium|S=false),1
+P(G=medium|S=false),2
+P(G=medium|S=false),3

@@ -38,12 +38,9 @@ false,true,=true,0.8
 false,false,=true,0.1
 
 Queries
-P(DEF=true|ES=true,NFF=true),1
-P(DEF=true|ES=true,NFF=true),2
-P(DEF=true|ES=true,NFF=true),3
-P(DEF=true|NFF=true),1
-P(DEF=true|NFF=true),2
-P(DEF=true|NFF=true),3
 P(DEF=true|NFF=true,BU=true,RL=true),1
 P(DEF=true|NFF=true,BU=true,RL=true),2
 P(DEF=true|NFF=true,BU=true,RL=true),3
+P(DEF=false|NFF=true,BU=true,RL=true),1
+P(DEF=false|NFF=true,BU=true,RL=true),2
+P(DEF=false|NFF=true,BU=true,RL=true),3
